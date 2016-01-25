@@ -1,0 +1,5 @@
+*.swp
+.prove
+Makefile
+lib/.precomp
+resources

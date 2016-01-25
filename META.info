@@ -1,0 +1,12 @@
+{
+    "name" : "Inline::Guile",
+    "version" : "0.1",
+    "author" : "github:drforr",
+    "description" : "Use Guile code and libraries in your Perl 6 code",
+    "depends" : [ "LibraryMake" ],
+    "provides" : {
+        "Inline::Guile" : "lib/Inline/Guile.pm6"
+    },
+    "resources" : [ "libraries/guile-helper" ],
+    "source-url" : "git://github.com/niner/Inline-Guile.git"
+}
