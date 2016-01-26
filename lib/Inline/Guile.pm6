@@ -1,5 +1,17 @@
 use NativeCall;
 
+class Inline::Guile::AltType is repr('CUnion')
+	{
+	has int32 $.int_content;
+	has Str $.str_content;
+	}
+
+class Inline::Guile::ConsCell is repr('CStruct')
+	{
+	has int32 $.type;
+	HAS Inline::Guile::AltType $.content;
+	}
+
 class Inline::Guile
 	{
 	sub native(Sub $sub)
@@ -38,5 +50,19 @@ class Inline::Guile
 	method run_malloc( Str $expression ) returns int32
 		{
 		return do_guile( $expression );
+		}
+
+	sub marshal_guile( Pointer[Inline::Guile::ConsCell] $cell )
+		{
+		my $type = $cell.deref.type;
+say "type: $type";
+		}
+	sub do_guile_cb( Str $expression,
+			 &marshal_guile (Pointer[Inline::Guile::ConsCell]) ) returns int32 { ... }
+		native(&do_guile_cb);
+
+	method do_guile_cb( Str $expression ) returns int32
+		{
+		return do_guile_cb( $expression, &marshal_guile );
 		}
 	}
