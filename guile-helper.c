@@ -13,28 +13,13 @@ void guile_str_void( const char* expression )
 	scm_with_guile( inner_with_guile, (void*)expression );
 	}
 
-int guile_str_int( const char* expression )
-	{
-	return scm_to_int
-		(
-		scm_with_guile( inner_with_guile, (void*)expression )
-		);
-	}
-
-char* guile_str_str( const char* expression )
-	{
-	return scm_to_locale_string
-		(
-		scm_with_guile( inner_with_guile, (void*)expression )
-		);
-	}
-
 typedef enum
 	{
-	SENTINEL     = -1,
-	TYPE_NIL     = 0,
-	TYPE_INTEGER = 1,
-	TYPE_STRING  = 2
+	SENTINEL,	// This way 0 is the usual array terminator.
+	TYPE_NIL,
+	TYPE_BOOLEAN,
+	TYPE_INTEGER,
+	TYPE_STRING,
 	}
 	cons_cell_type;
 
@@ -44,37 +29,39 @@ typedef struct
 	union
 		{
 		long  int_content;
-		char* str_content;
+		char* string_content;
 		};
 	}
 	cons_cell;
 
-void* inner_do_guile(void* expression)
+static void _populate_integer( cons_cell* c_cell, SCM scm_cell )
 	{
-	cons_cell* result = malloc(sizeof(cons_cell));
-	SCM str = scm_from_latin1_string((char*) expression);
-	SCM foo = scm_eval_string(str);
-	//result[0].type = TYPE_INTEGER;
-	result[0].type = TYPE_STRING;
-	result[0].int_content = scm_to_int( foo );
-	return result;
+	c_cell->type = TYPE_INTEGER;
+	c_cell->int_content = scm_to_int( scm_cell );
 	}
 
-int do_guile( const char* expression )
+static void _populate_string( cons_cell* c_cell, SCM scm_cell )
 	{
-	cons_cell* cells =
-		scm_with_guile( inner_do_guile, (void*)expression );
-	long res = cells[0].int_content;
+	c_cell->type = TYPE_STRING;
+	c_cell->string_content = scm_to_locale_string( scm_cell );
+	}
 
-	free(cells);
-	return res;
+void* inner_do_guile(void* expression)
+	{
+	cons_cell* result = malloc( sizeof( cons_cell ));
+	SCM str = scm_from_latin1_string( (char*) expression );
+	SCM scm_obj = scm_eval_string( str );
+	if ( scm_is_integer( scm_obj ) )
+		_populate_integer( &result[0], scm_obj );
+	else if ( scm_is_string( scm_obj ) )
+		_populate_string( &result[0], scm_obj );
+	return result;
 	}
 
 int do_guile_cb( const char* expression, void (*unmarshal(void*)) )
 	{
-	cons_cell* cells =
-		scm_with_guile( inner_do_guile, (void*)expression );
-	long res = cells[0].int_content;
+	cons_cell* cells = scm_with_guile( inner_do_guile, (void*)expression );
+	long res         = cells[0].int_content;
 
 	unmarshal(cells);
 
