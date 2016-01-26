@@ -11,5 +11,6 @@ use Inline::Guile;
 
 my $g = Inline::Guile.new;
 
-is $g.run_i('(+ 1 2)'), 3, q{(+ 1 2) evaluates to 3};
+$g.run_v('(define (foo x) (+ x 1))');
+is $g.run_i('(foo 3)'), 4, q{Can call user-defined 'foo'};
 is $g.run_s('"foo"'), 'foo', q{"foo" evaluates to 'foo'};
