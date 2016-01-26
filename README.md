@@ -13,7 +13,8 @@ Inline::Guile
 
 # DESCRIPTION
 
-Module for executing Guile code and accessing Guile libraries from Perl 6.
+Module for executing Guile code and accessing Guile libraries from Perl 6. 
+Guile is a GNU implementation of the scheme language. See https://en.wikipedia.org/wiki/GNU_Guile.
 
 # BUILDING
 
