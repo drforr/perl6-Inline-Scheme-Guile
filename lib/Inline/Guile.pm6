@@ -1,10 +1,10 @@
 use NativeCall;
 
 constant SENTINEL = 0;
-constant TYPE_NIL = 1;
-constant TYPE_BOOLEAN = 2;
-constant TYPE_INTEGER = 3;
-constant TYPE_STRING = 4;
+constant TYPE_NIL = SENTINEL + 1;
+constant TYPE_BOOLEAN = TYPE_NIL + 1;
+constant TYPE_INTEGER = TYPE_BOOLEAN + 1;
+constant TYPE_STRING = TYPE_INTEGER + 1;
 
 class Inline::Guile::AltType is repr('CUnion')
 	{
@@ -28,22 +28,19 @@ class Inline::Guile
 		trait_mod:<is>($sub, :native($path));
 		}
 
-	sub guile_str_void( Str $function ) { ... }
-		native(&guile_str_void);
+	sub run_v( Str $function ) { ... }
+		native(&run_v);
 
 	method run_v( Str $expression )
 		{
-		guile_str_void( $expression );
+		run_v( $expression );
 		}
 
-	sub do_guile( Str $expression ) returns int32 { ... }
-		native(&do_guile);
-
-	sub do_guile_cb( Str $expression,
+	sub run( Str $expression,
 			 &marshal_guile (Pointer[Inline::Guile::ConsCell]) ) returns int32 { ... }
-		native(&do_guile_cb);
+		native(&run);
 
-	method do_guile_cb( Str $expression ) returns int32
+	method run( Str $expression ) returns int32
 		{
 		my $stuff;
 		my $ref = sub ( Pointer[Inline::Guile::ConsCell] $cell )
@@ -63,7 +60,7 @@ class Inline::Guile
 					}
 				}
 			}
-		my $res = do_guile_cb( $expression, $ref );
+		my $res = run( $expression, $ref );
 		return $stuff;
 		}
 	}

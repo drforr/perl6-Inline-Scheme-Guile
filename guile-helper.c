@@ -8,7 +8,7 @@ void* inner_with_guile(void* expression)
 	return foo;
 	}
 
-void guile_str_void( const char* expression )
+void run_v( const char* expression )
 	{
 	scm_with_guile( inner_with_guile, (void*)expression );
 	}
@@ -58,7 +58,7 @@ void* inner_do_guile(void* expression)
 	return result;
 	}
 
-int do_guile_cb( const char* expression, void (*unmarshal(void*)) )
+int run( const char* expression, void (*unmarshal(void*)) )
 	{
 	cons_cell* cells = scm_with_guile( inner_do_guile, (void*)expression );
 	long res         = cells[0].int_content;
