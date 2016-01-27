@@ -28,19 +28,11 @@ class Inline::Guile
 		trait_mod:<is>($sub, :native($path));
 		}
 
-	sub run_v( Str $function ) { ... }
-		native(&run_v);
-
-	method run_v( Str $expression )
-		{
-		run_v( $expression );
-		}
-
 	sub run( Str $expression,
-			 &marshal_guile (Pointer[Inline::Guile::ConsCell]) ) returns int32 { ... }
+		 &marshal_guile (Pointer[Inline::Guile::ConsCell]) ) { ... }
 		native(&run);
 
-	method run( Str $expression ) returns int32
+	method run( Str $expression )
 		{
 		my $stuff;
 		my $ref = sub ( Pointer[Inline::Guile::ConsCell] $cell )
@@ -60,7 +52,7 @@ class Inline::Guile
 					}
 				}
 			}
-		my $res = run( $expression, $ref );
+		run( $expression, $ref );
 		return $stuff;
 		}
 	}
