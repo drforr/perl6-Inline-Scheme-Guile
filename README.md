@@ -1,19 +1,19 @@
 # TITLE
 
-Inline::Guile
+Inline::Scheme::Guile
 
 # SYNOPSIS
 
 ```
-    use Inline::Guile;
-    my $g = Inline::Guile.new();
+    use Inline::Scheme::Guile;
+    my $g = Inline::Scheme::Guile.new();
     $g.run_i('(+ 3 5)');
     $g.run_s('"foo"');
 ```
 
 # DESCRIPTION
 
-Module for executing Guile code and accessing Guile libraries from Perl 6.
+Module for executing Guile Scheme code and accessing Guile Scheme libraries from Perl 6.
 
 # BUILDING
 

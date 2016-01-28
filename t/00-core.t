@@ -7,9 +7,9 @@ use NativeCall;
 
 plan 3;
 
-use Inline::Guile;
+use Inline::Scheme::Guile;
 
-my $g = Inline::Guile.new;
+my $g = Inline::Scheme::Guile.new;
 
 $g.run( q{(define (foo x) (+ x 1))} );
 

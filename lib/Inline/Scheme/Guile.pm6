@@ -6,19 +6,19 @@ constant TYPE_BOOLEAN = TYPE_NIL + 1;
 constant TYPE_INTEGER = TYPE_BOOLEAN + 1;
 constant TYPE_STRING = TYPE_INTEGER + 1;
 
-class Inline::Guile::AltType is repr('CUnion')
+class Inline::Scheme::Guile::AltType is repr('CUnion')
 	{
 	has int32 $.int_content;
 	has Str   $.string_content;
 	}
 
-class Inline::Guile::ConsCell is repr('CStruct')
+class Inline::Scheme::Guile::ConsCell is repr('CStruct')
 	{
 	has int32 $.type;
-	HAS Inline::Guile::AltType $.content;
+	HAS Inline::Scheme::Guile::AltType $.content;
 	}
 
-class Inline::Guile
+class Inline::Scheme::Guile
 	{
 	sub native(Sub $sub)
 		{
@@ -29,14 +29,14 @@ class Inline::Guile
 		}
 
 	sub run( Str $expression,
-		 &marshal_guile (Pointer[Inline::Guile::ConsCell]) )
+		 &marshal_guile (Pointer[Inline::Scheme::Guile::ConsCell]) )
 		   { ... }
 		native(&run);
 
 	method run( Str $expression )
 		{
 		my @stuff;
-		my $ref = sub ( Pointer[Inline::Guile::ConsCell] $cell )
+		my $ref = sub ( Pointer[Inline::Scheme::Guile::ConsCell] $cell )
 			{
 			my $type = $cell.deref.type;
 			given $type
