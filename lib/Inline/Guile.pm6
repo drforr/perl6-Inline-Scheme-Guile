@@ -29,12 +29,13 @@ class Inline::Guile
 		}
 
 	sub run( Str $expression,
-		 &marshal_guile (Pointer[Inline::Guile::ConsCell]) ) { ... }
+		 &marshal_guile (Pointer[Inline::Guile::ConsCell]) )
+		   { ... }
 		native(&run);
 
 	method run( Str $expression )
 		{
-		my $stuff;
+		my @stuff;
 		my $ref = sub ( Pointer[Inline::Guile::ConsCell] $cell )
 			{
 			my $type = $cell.deref.type;
@@ -43,16 +44,16 @@ class Inline::Guile
 				when TYPE_INTEGER
 					{
 					my $content = $cell.deref.content;
-					$stuff = $content.int_content;
+					@stuff.push( $content.int_content );
 					}
 				when TYPE_STRING
 					{
 					my $content = $cell.deref.content;
-					$stuff = $content.string_content;
+					@stuff.push( $content.string_content );
 					}
 				}
 			}
 		run( $expression, $ref );
-		return $stuff;
+		return @stuff;
 		}
 	}

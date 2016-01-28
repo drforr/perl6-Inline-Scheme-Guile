@@ -3,7 +3,7 @@
 
 typedef enum
 	{
-	SENTINEL,	// This way 0 is the usual array terminator.
+	ZERO,		// This way 0 is the usual array terminator.
 	TYPE_NIL,
 	TYPE_BOOLEAN,
 	TYPE_INTEGER,
@@ -21,6 +21,11 @@ typedef struct
 		};
 	}
 	cons_cell;
+
+static void _populate_zero( cons_cell* c_cell )
+	{
+	c_cell->type = ZERO;
+	}
 
 static void _populate_integer( cons_cell* c_cell, SCM scm_cell )
 	{
@@ -42,19 +47,30 @@ static void _populate_cell( cons_cell* cons, SCM scm )
 
 void* _run(void* expression)
 	{
-	cons_cell* result = malloc( sizeof( cons_cell ));
+	cons_cell* result = malloc( sizeof( cons_cell ) * 2);
 	SCM str = scm_from_latin1_string( (char*) expression );
-	SCM scm_obj = scm_eval_string( str );
+	SCM scm = scm_eval_string( str );
+	size_t num_values = scm_c_nvalues( scm );
+	int i;
 
-	_populate_cell( &result[0], scm_obj );
+	for ( i = 0; i < num_values; i++ )
+		{
+		SCM _scm = scm_c_value_ref( scm, i );
+		_populate_cell( &result[i], _scm );
+		}
+	_populate_zero( &result[i+1] );
 	return result;
 	}
 
 void run( const char* expression, void (*unmarshal(void*)) )
 	{
 	cons_cell* cells = scm_with_guile( _run, (void*)expression );
+	cons_cell* head = cells;
 
-	unmarshal(cells);
+	while( head->type != ZERO )
+		{
+		unmarshal(head++);
+		}
 
 	free(cells);
 	}
