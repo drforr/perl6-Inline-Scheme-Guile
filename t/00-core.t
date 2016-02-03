@@ -11,10 +11,24 @@ use Inline::Scheme::Guile;
 
 my $g = Inline::Scheme::Guile.new;
 
-$g.run( q{(define (foo x) (+ x 1))} );
+subtest sub
+	{
+	is-deeply [ $g.run( q{1} ) ], [ 1 ], q{value 1};
+	is-deeply [ $g.run( q{"foo"} ) ], [ "foo" ], q{value "foo"};
+	},
+	q{Single return value};
 
-is $g.run( q{(foo 5)} ), 6,     q{User-defined function returns integer};
-is $g.run( q{"foo"}   ), "foo", q{"foo" evaluates through callback};
-is-deeply [ $g.run( q{(values 1 2)} ) ],
-	  [ 1, 2 ],
-	  q{(values 1 2) returns a list of values};
+subtest sub
+	{
+	is-deeply [ $g.run( q{(values 1 2)} ) ],
+		  [ 1, 2 ],
+		  q{(values 1 2) returns a list of values};
+	},
+	q{Two return values (not a two-element list)};
+
+subtest sub
+	{
+	$g.run( q{(define (inc-it x) (+ x 1))} );
+	is-deeply [ $g.run( q{(inc-it 2)} ) ], [ 3 ], q{(inc-it 2) is 3};
+	},
+	q{Environment persists};

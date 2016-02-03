@@ -1,4 +1,4 @@
-*.swp
+*.sw[op]
 .prove
 Makefile
 lib/.precomp
