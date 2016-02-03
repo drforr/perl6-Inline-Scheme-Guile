@@ -3,7 +3,9 @@
 
 typedef enum
 	{
-	ZERO,		// This way 0 is the usual array terminator.
+	UNKNOWN_TYPE = -2,
+	VOID = -1,
+	ZERO = 0,
 	TYPE_NIL,
 	TYPE_BOOLEAN,
 	TYPE_INTEGER,
@@ -22,11 +24,6 @@ typedef struct
 	}
 	cons_cell;
 
-static void _populate_zero( cons_cell* c_cell )
-	{
-	c_cell->type = ZERO;
-	}
-
 static void _populate_integer( cons_cell* c_cell, SCM scm_cell )
 	{
 	c_cell->type = TYPE_INTEGER;
@@ -37,12 +34,6 @@ static void _populate_string( cons_cell* c_cell, SCM scm_cell )
 	{
 	c_cell->type = TYPE_STRING;
 	c_cell->string_content = scm_to_locale_string( scm_cell );
-	}
-
-static void _populate_cell( cons_cell* cons, SCM scm )
-	{
-	if ( scm_is_integer( scm ) ) { _populate_integer( cons, scm ); return; }
-	if ( scm_is_string( scm ) ) { _populate_string( cons, scm ); return; }
 	}
 
 static size_t _count_cells( SCM scm )
@@ -56,14 +47,20 @@ static size_t _count_cells( SCM scm )
 
 static void _walk_scm( SCM scm, cons_cell* result )
 	{
+	int num_values = scm_c_nvalues( scm );
 	int i;
 
-	for ( i = 0; i < scm_c_nvalues( scm ); i++ )
+	for ( i = 0; i < num_values; i++ )
 		{
 		SCM _scm = scm_c_value_ref( scm, i );
-		_populate_cell( &result[i], _scm );
+//		result[i].type = UNKNOWN_TYPE;
+
+		if ( scm_is_integer( _scm ) )
+			_populate_integer( &result[i], _scm );
+		if ( scm_is_string( _scm ) )
+			_populate_string( &result[i], _scm );
 		}
-	_populate_zero( &result[i+1] );
+	result[i+1].type = ZERO;
 	}
 
 void* _run( void* expression )
@@ -71,8 +68,18 @@ void* _run( void* expression )
 	SCM str = scm_from_latin1_string( (char*) expression );
 	SCM scm = scm_eval_string( str );
 
+	// Sigh, special-case void lists.
+	if ( scm_c_nvalues( scm ) == 0 )
+		{
+		cons_cell* result = malloc( sizeof( cons_cell ) * 2 );
+		result[0].type = VOID;
+		result[1].type = ZERO;
+		return result;
+		}
+
 	size_t num_values = _count_cells( scm );
 	cons_cell* result = malloc( sizeof( cons_cell ) * num_values );
+
 	_walk_scm( scm, result );
 
 	return result;

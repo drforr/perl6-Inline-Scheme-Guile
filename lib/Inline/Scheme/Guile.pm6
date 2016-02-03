@@ -1,5 +1,7 @@
 use NativeCall;
 
+constant UNKNOWN_TYPE = -2;
+constant VOID = -1;
 constant SENTINEL = 0;
 constant TYPE_NIL = SENTINEL + 1;
 constant TYPE_BOOLEAN = TYPE_NIL + 1;
@@ -38,6 +40,11 @@ class Inline::Scheme::Guile
 		my @stuff;
 		my $ref = sub ( Pointer[Inline::Scheme::Guile::ConsCell] $cell )
 			{
+			CATCH
+				{
+				warn "Don't die in callback, warn instead.\n";
+				warn $_;
+				}
 			my $type = $cell.deref.type;
 			given $type
 				{
@@ -50,6 +57,16 @@ class Inline::Scheme::Guile
 					{
 					my $content = $cell.deref.content;
 					@stuff.push( $content.string_content );
+					}
+
+				when VOID
+					{
+					# Don't do anything in this case.
+					}
+
+				when UNKNOWN_TYPE
+					{
+					warn "Unknown type caught\n";
 					}
 				}
 			}

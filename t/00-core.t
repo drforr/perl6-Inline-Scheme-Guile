@@ -15,7 +15,8 @@ subtest sub
 	{
 	plan 3;
 
-is-deeply [ $g.run( q{#nil} ) ], [ Nil ], q{value Nil};
+	is-deeply [ $g.run( q{} ) ], [ ], q{value (none)};
+#is-deeply [ $g.run( q{#nil} ) ], [ Nil ], q{value Nil};
 	is-deeply [ $g.run( q{1} ) ], [ 1 ], q{value 1};
 	is-deeply [ $g.run( q{"foo"} ) ], [ "foo" ], q{value "foo"};
 	},
