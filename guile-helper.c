@@ -45,20 +45,36 @@ static void _populate_cell( cons_cell* cons, SCM scm )
 	if ( scm_is_string( scm ) ) { _populate_string( cons, scm ); return; }
 	}
 
-void* _run(void* expression)
+static size_t _count_cells( SCM scm )
 	{
-	cons_cell* result = malloc( sizeof( cons_cell ) * 2);
-	SCM str = scm_from_latin1_string( (char*) expression );
-	SCM scm = scm_eval_string( str );
-	size_t num_values = scm_c_nvalues( scm );
+	size_t num_cells = 1; // Start with the sentinel
+
+	num_cells += scm_c_nvalues( scm );
+
+	return num_cells;
+	}
+
+static void _walk_scm( SCM scm, cons_cell* result )
+	{
 	int i;
 
-	for ( i = 0; i < num_values; i++ )
+	for ( i = 0; i < scm_c_nvalues( scm ); i++ )
 		{
 		SCM _scm = scm_c_value_ref( scm, i );
 		_populate_cell( &result[i], _scm );
 		}
 	_populate_zero( &result[i+1] );
+	}
+
+void* _run( void* expression )
+	{
+	SCM str = scm_from_latin1_string( (char*) expression );
+	SCM scm = scm_eval_string( str );
+
+	size_t num_values = _count_cells( scm );
+	cons_cell* result = malloc( sizeof( cons_cell ) * num_values );
+	_walk_scm( scm, result );
+
 	return result;
 	}
 
