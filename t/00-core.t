@@ -5,23 +5,31 @@ use Test;
 
 use NativeCall;
 
-plan 3;
+plan 2;
 
 use Inline::Scheme::Guile;
 
 my $g = Inline::Scheme::Guile.new;
 
+is-deeply [ $g.run( q{}     ) ], [       ], q{''};
+
+#$g._dump('2');
 subtest sub
 	{
-	plan 3;
+	plan 6;
 
-	is-deeply [ $g.run( q{} ) ], [ ], q{value (none)};
-#is-deeply [ $g.run( q{#nil} ) ], [ Nil ], q{value Nil};
-	is-deeply [ $g.run( q{1} ) ], [ 1 ], q{value 1};
-	is-deeply [ $g.run( q{"foo"} ) ], [ "foo" ], q{value "foo"};
+# Anything that returns 0 to Perl 6 dies.
+	is-deeply [ $g.run( q{#nil} ) ], [ Nil   ], q{#nil};
+#	is-deeply [ $g.run( q{#f}   ) ], [ False ], q{#f};
+	is-deeply [ $g.run( q{#t}   ) ], [ True  ], q{#t};
+#	is-deeply [ $g.run( q{0}    ) ], [ 0     ], q{0};
+	is-deeply [ $g.run( q{1}    ) ], [ 1     ], q{1};
+	is-deeply [ $g.run( q{-1}   ) ], [ -1    ], q{-1};
+#	is-deeply [ $g.run( q{""}   ) ], [ ""    ], q{""};
 	},
-	q{Single return value};
+	q{Single atom};
 
+#`(
 subtest sub
 	{
 	plan 3;
@@ -48,3 +56,4 @@ subtest sub
 	is-deeply [ $g.run( q{(inc-it 2)} ) ], [ 3 ], q{(inc-it 2) is 3};
 	},
 	q{Environment persists};
+)
