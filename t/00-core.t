@@ -11,21 +11,26 @@ use Inline::Scheme::Guile;
 
 my $g = Inline::Scheme::Guile.new;
 
-is-deeply [ $g.run( q{}     ) ], [       ], q{''};
+is-deeply [ $g.run( q{}     ) ], [       ], q{empty};
 
-#$g._dump('2');
+#$g._dump('-1.2');
+#$g.run('""');
 subtest sub
 	{
-	plan 6;
+	plan 10;
 
 # Anything that returns 0 to Perl 6 dies.
-	is-deeply [ $g.run( q{#nil} ) ], [ Nil   ], q{#nil};
-#	is-deeply [ $g.run( q{#f}   ) ], [ False ], q{#f};
-	is-deeply [ $g.run( q{#t}   ) ], [ True  ], q{#t};
-#	is-deeply [ $g.run( q{0}    ) ], [ 0     ], q{0};
-	is-deeply [ $g.run( q{1}    ) ], [ 1     ], q{1};
-	is-deeply [ $g.run( q{-1}   ) ], [ -1    ], q{-1};
-#	is-deeply [ $g.run( q{""}   ) ], [ ""    ], q{""};
+	is-deeply [ $g.run( q{#nil}  ) ], [ Nil    ], q{#nil};
+#	is-deeply [ $g.run( q{#f}    ) ], [ False  ], q{#f};
+	is-deeply [ $g.run( q{#t}    ) ], [ True   ], q{#t};
+#	is-deeply [ $g.run( q{0}     ) ], [ 0      ], q{0};
+	is-deeply [ $g.run( q{1}     ) ], [ 1      ], q{1};
+	is-deeply [ $g.run( q{-1}    ) ], [ -1     ], q{-1};
+	is-deeply [ $g.run( q{""}    ) ], [ ""     ], q{""};
+	is-deeply [ $g.run( q{"foo"} ) ], [ "foo"  ], q{"foo"};
+	is-deeply [ $g.run( q{"£"}   ) ], [ "£"    ], q{"£"};
+	is-deeply [ $g.run( q{-1.2}  ) ], [ -1.2e0 ], q{-1.2 -> -1.2e0 (?)};
+	is-deeply [ $g.run( q{-1+2i} ) ], [ -1.0e0+2.0e0i  ], q{-1+2i -> -1.0e0+2.0e0i};
 	},
 	q{Single atom};
 

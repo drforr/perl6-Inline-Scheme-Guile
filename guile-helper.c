@@ -65,8 +65,17 @@ typedef enum
 	TYPE_BOOL = 2,
 	TYPE_INTEGER = 3,
 	TYPE_STRING = 4,
+	TYPE_DOUBLE = 5,
+	TYPE_COMPLEX = 6,
 	}
 	cons_cell_type;
+
+typedef struct
+	{
+	double real_part;
+	double imag_part;
+	}
+	complex_value;
 
 typedef struct
 	{
@@ -75,21 +84,11 @@ typedef struct
 		{
 		long  int_content;
 		char* string_content;
+		double double_content;
+		complex_value complex_content;
 		};
 	}
 	cons_cell;
-
-static void _populate_integer( cons_cell* c_cell, SCM scm_cell )
-	{
-	c_cell->type = TYPE_INTEGER;
-	c_cell->int_content = scm_to_int( scm_cell );
-	}
-
-static void _populate_string( cons_cell* c_cell, SCM scm_cell )
-	{
-	c_cell->type = TYPE_STRING;
-	c_cell->string_content = scm_to_locale_string( scm_cell );
-	}
 
 static size_t _count_cells( SCM scm )
 	{
@@ -103,72 +102,96 @@ static size_t _count_cells( SCM scm )
 static void _walk_scm( SCM scm, cons_cell* result )
 	{
 	int num_values = scm_c_nvalues( scm );
-	int i;
 
-	// '' is true and only 1 value, apparently.
-	//
-	if (	num_values == 1 &&
-		!scm_is_bool( scm ) &&
-		!scm_is_integer( scm ) &&
-		scm_is_true( scm ) )
+	if ( num_values == 1 )
 		{
-//printf("Void\n");
-		result[0].type = VOID;
-		result[1].type = ZERO;
-		return;
-		}
-
-	// '#nil' is null, bool, false and only 1 value.
-	//
-	if (	num_values == 1 &&
-		scm_is_null( scm ) &&
-		scm_is_bool( scm ) &&
-		scm_is_false( scm ) )
-		{
+		if ( scm_is_bool( scm ) )
+			{
+			if ( scm_is_false( scm ) )
+				{
+				// '#nil' is null, bool, false
+				//
+				if ( scm_is_null( scm ) )
+					{
 //printf("Nil\n");
-		result[0].type = TYPE_NIL;
-		result[1].type = ZERO;
-		return;
-		}
-
-	// '#f' is not null, bool, false and only 1 value.
-	//
-	if (	num_values == 1 &&
-		//scm_is_null( scm ) &&
-		scm_is_bool( scm ) &&
-		scm_is_false( scm ) )
-		{
+					result[0].type = TYPE_NIL;
+					}
+				// '#f' is not null, bool, false
+				//
+				else
+					{
 //printf("False\n");
-		result[0].type = TYPE_BOOL;
-		result[0].int_content = 0;
-		result[1].type = ZERO;
-		return;
-		}
-
-	// '#t' is not null, bool, not false, true and only 1 value.
-	//
-	if (	num_values == 1 &&
-		//scm_is_null( scm ) &&
-		scm_is_bool( scm ) &&
-		scm_is_true( scm ) )
-		{
+					result[0].type = TYPE_BOOL;
+					result[0].int_content = 0;
+					}
+				}
+			// '#t' is not null, bool, not false, true
+			//
+			else
+				{
 //printf("True\n");
-		result[0].type = TYPE_BOOL;
-		result[0].int_content = 1;
-		result[1].type = ZERO;
-		return;
-		}
+				result[0].type = TYPE_BOOL;
+				result[0].int_content = 1;
+				}
+			result[1].type = ZERO;
+			return;
+			}
 
-	// '2' is an integer
-	//
-	if (	num_values == 1 &&
-		scm_is_integer( scm ) )
-		{
+		// '2' is an integer
+		//
+		if ( scm_is_integer( scm ) )
+			{
 //printf("Integer\n");
-		result[0].type = TYPE_INTEGER;
-		result[0].int_content = scm_to_int( scm );
-		result[1].type = ZERO;
-		return;
+			result[0].type = TYPE_INTEGER;
+			result[0].int_content = scm_to_int( scm );
+			result[1].type = ZERO;
+			return;
+			}
+
+		// '""' is an string
+		//
+		if ( scm_is_string( scm ) )
+			{
+//printf("String\n");
+			result[0].type = TYPE_STRING;
+			result[0].string_content = scm_to_locale_string( scm );
+			result[1].type = ZERO;
+			return;
+			}
+
+		// '-1.2' is a real
+		//
+		if ( scm_is_real( scm ) )
+			{
+//printf("Real\n");
+			result[0].type = TYPE_DOUBLE;
+			result[0].double_content = scm_to_double( scm );
+			result[1].type = ZERO;
+			return;
+			}
+
+		// '-1i+2' is a real
+		//
+		if ( scm_is_complex( scm ) )
+			{
+printf("complex\n");
+			result[0].type = TYPE_COMPLEX;
+			result[0].complex_content.real_part = scm_c_real_part( scm );
+			result[0].complex_content.imag_part = scm_c_imag_part( scm );
+			result[1].type = ZERO;
+			return;
+			}
+
+		// '' is true and only 1 value, apparently.
+		//
+		if ( scm_is_true( scm ) )
+			{
+printf("Void (fallback)\n");
+			result[0].type = VOID;
+			result[1].type = ZERO;
+			return;
+			}
+
 		}
 
 /*
@@ -176,11 +199,6 @@ static void _walk_scm( SCM scm, cons_cell* result )
 		{
 		SCM _scm = scm_c_value_ref( scm, i );
 		result[i].type = UNKNOWN_TYPE;
-
-//		else if ( scm_is_integer( _scm ) )
-//			_populate_integer( &result[i], _scm );
-//		else if ( scm_is_string( _scm ) )
-//			_populate_string( &result[i], _scm );
 		}
 	result[i+1].type = ZERO;
 */
@@ -188,7 +206,7 @@ static void _walk_scm( SCM scm, cons_cell* result )
 
 void* _run( void* expression )
 	{
-	SCM str = scm_from_latin1_string( (char*) expression );
+	SCM str = scm_from_utf8_string( (char*) expression );
 	SCM scm = scm_eval_string( str );
 
 	// Sigh, special-case void lists.
@@ -208,14 +226,15 @@ void* _run( void* expression )
 	return result;
 	}
 
-void* __dump( void* expression )
+void* __dump( void* _expression )
 	{
-	SCM str = scm_from_latin1_string( (char*) expression );
+	char* expression = (char*) _expression;
+	SCM str = scm_from_latin1_string( expression );
 	SCM scm = scm_eval_string( str );
 
 	printf("SCM object from '%s' returns %d cells\n",
 		expression,
-		scm_c_nvalues( scm ));
+		(int)scm_c_nvalues( scm ));
 	dump_scm( scm );
 	printf("SCM 0th cell\n");
 	dump_scm( scm_c_value_ref( scm, 0 ) );

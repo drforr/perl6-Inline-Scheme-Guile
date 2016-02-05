@@ -6,12 +6,22 @@ constant ZERO = 0;
 constant TYPE_NIL = 1;
 constant TYPE_BOOL = 2;
 constant TYPE_INTEGER = 3;
-#constant TYPE_STRING = 4;
+constant TYPE_STRING = 4;
+constant TYPE_DOUBLE = 5;
+constant TYPE_COMPLEX = 6;
+
+class Inline::Scheme::Guile::AltDouble is repr('CStruct')
+	{
+	has num64 $.real_part;
+	has num64 $.imag_part;
+	}
 
 class Inline::Scheme::Guile::AltType is repr('CUnion')
 	{
 	has long $.int_content;
+	has num64 $.double_content;
 	has Str  $.string_content;
+	HAS Inline::Scheme::Guile::AltDouble $.complex_content;
 	}
 
 class Inline::Scheme::Guile::ConsCell is repr('CStruct')
@@ -57,11 +67,23 @@ class Inline::Scheme::Guile
 			my $type = $cell.deref.type;
 			given $type
 				{
-#				when TYPE_STRING
-#					{
-#					my $content = $cell.deref.content;
-#					@stuff.push( $content.string_content );
-#					}
+				when TYPE_STRING
+					{
+					my $content = $cell.deref.content;
+					@stuff.push( $content.string_content );
+					}
+
+				when TYPE_COMPLEX
+					{
+					my $content = $cell.deref.content;
+					@stuff.push( $content.complex_content.real_part + ( $content.complex_content.imag_part * i ) );
+					}
+
+				when TYPE_DOUBLE
+					{
+					my $content = $cell.deref.content;
+					@stuff.push( $content.double_content );
+					}
 
 				when TYPE_INTEGER
 					{
