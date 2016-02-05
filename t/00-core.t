@@ -11,7 +11,8 @@ use Inline::Scheme::Guile;
 
 my $g = Inline::Scheme::Guile.new;
 
-is-deeply [ $g.run( q{}     ) ], [       ], q{empty};
+is-deeply [ $g.run( q{}         ) ], [ ], q{empty};
+is-deeply [ $g.run( q{(values)} ) ], [ ], q{(values) -> empty};
 
 #$g._dump('-1+2i');
 #$g._dump('-1/2');
@@ -41,14 +42,9 @@ subtest sub
 	},
 	q{Single atom};
 
-#`(
 subtest sub
 	{
-	plan 3;
-
-	is-deeply [ $g.run( q{(values)} ) ],
-		  [ ],
-		  q{(values) returns nothing};
+	plan 2;
 
 	is-deeply [ $g.run( q{(values 1 2)} ) ],
 		  [ 1, 2 ],
@@ -68,4 +64,3 @@ subtest sub
 	is-deeply [ $g.run( q{(inc-it 2)} ) ], [ 3 ], q{(inc-it 2) is 3};
 	},
 	q{Environment persists};
-)

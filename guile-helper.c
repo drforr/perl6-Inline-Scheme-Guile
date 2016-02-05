@@ -109,149 +109,138 @@ static size_t _count_cells( SCM scm )
 	return num_cells;
 	}
 
-static void _walk_scm( SCM scm, cons_cell* result )
+static void _scm_to_cell( SCM scm, cons_cell* cell )
 	{
-	int num_values = scm_c_nvalues( scm );
-
-	if ( num_values == 1 )
+	if ( scm_is_bool( scm ) )
 		{
-		if ( scm_is_bool( scm ) )
+		if ( scm_is_false( scm ) )
 			{
-			if ( scm_is_false( scm ) )
+			// '#nil' is null, bool, false
+			//
+			if ( scm_is_null( scm ) )
 				{
-				// '#nil' is null, bool, false
-				//
-				if ( scm_is_null( scm ) )
-					{
 //printf("Nil\n");
-					result[0].type = TYPE_NIL;
-					}
-				// '#f' is not null, bool, false
-				//
-				else
-					{
-//printf("False\n");
-					result[0].type = TYPE_BOOL;
-					result[0].int_content = 0;
-					}
+				cell->type = TYPE_NIL;
 				}
-			// '#t' is not null, bool, not false, true
+			// '#f' is not null, bool, false
 			//
 			else
 				{
-//printf("True\n");
-				result[0].type = TYPE_BOOL;
-				result[0].int_content = 1;
+//printf("False\n");
+				cell->type = TYPE_BOOL;
+				cell->int_content = 0;
 				}
-			result[1].type = ZERO;
-			return;
 			}
-
-		// '2' is an integer
+		// '#t' is not null, bool, not false, true
 		//
-		if ( scm_is_integer( scm ) )
+		else
 			{
-//printf("Integer\n");
-			result[0].type = TYPE_INTEGER;
-			result[0].int_content = scm_to_int( scm );
-			result[1].type = ZERO;
-			return;
+//printf("True\n");
+			cell->type = TYPE_BOOL;
+			cell->int_content = 1;
 			}
-
-		// '""' is an string
-		//
-		if ( scm_is_string( scm ) )
-			{
-//printf("String\n");
-			result[0].type = TYPE_STRING;
-			result[0].string_content = scm_to_locale_string( scm );
-			result[1].type = ZERO;
-			return;
-			}
-
-		// "'a" is an symbol
-		//
-		if ( scm_is_symbol( scm ) )
-			{
-//printf("Symbol\n");
-			result[0].type = TYPE_SYMBOL;
-			result[0].string_content =
-				scm_to_locale_string( scm_symbol_to_string( scm ) );
-			result[1].type = ZERO;
-			return;
-			}
-
-		// '#:a" is an keyword
-		//
-		if ( scm_is_keyword( scm ) )
-			{
-//printf("keyword\n");
-			result[0].type = TYPE_KEYWORD;
-			result[0].string_content =
-				scm_to_locale_string( scm_symbol_to_string( scm_keyword_to_symbol( scm ) ) );
-			result[1].type = ZERO;
-			return;
-			}
-
-		// '-1.2' is a real
-		//
-		if ( scm_is_real( scm ) )
-			{
-//printf("Real\n");
-			result[0].type = TYPE_DOUBLE;
-			result[0].double_content = scm_to_double( scm );
-			result[1].type = ZERO;
-			return;
-			}
-
-		// '-1/2' is a rational (and complex, so test before complex)
-		//
-		if ( scm_is_rational( scm ) )
-			{
-//printf("rational\n");
-			result[0].type = TYPE_RATIONAL;
-			result[0].rational_content.numerator_part =
-				scm_to_double( scm_numerator( scm ) );
-			result[0].rational_content.denominator_part =
-				 scm_to_double( scm_denominator( scm ) );
-			result[1].type = ZERO;
-			return;
-			}
-
-		// '-1i+2' is a complex
-		//
-		if ( scm_is_complex( scm ) )
-			{
-//printf("complex\n");
-			result[0].type = TYPE_COMPLEX;
-			result[0].complex_content.real_part =
-				scm_c_real_part( scm );
-			result[0].complex_content.imag_part =
-				 scm_c_imag_part( scm );
-			result[1].type = ZERO;
-			return;
-			}
-
-		// '' is true and only 1 value, apparently.
-		//
-		if ( scm_is_true( scm ) )
-			{
-//printf("Void (fallback)\n");
-			result[0].type = VOID;
-			result[1].type = ZERO;
-			return;
-			}
-
+		return;
 		}
 
-/*
+	// '2' is an integer
+	//
+	if ( scm_is_integer( scm ) )
+		{
+//printf("Integer\n");
+		cell->type = TYPE_INTEGER;
+		cell->int_content = scm_to_int( scm );
+		return;
+		}
+
+	// '""' is an string
+	//
+	if ( scm_is_string( scm ) )
+		{
+//printf("String\n");
+		cell->type = TYPE_STRING;
+		cell->string_content = scm_to_locale_string( scm );
+		return;
+		}
+
+	// "'a" is an symbol
+	//
+	if ( scm_is_symbol( scm ) )
+		{
+//printf("Symbol\n");
+		cell->type = TYPE_SYMBOL;
+		cell->string_content =
+			scm_to_locale_string( scm_symbol_to_string( scm ) );
+		return;
+		}
+
+	// '#:a" is an keyword
+	//
+	if ( scm_is_keyword( scm ) )
+		{
+//printf("keyword\n");
+		cell->type = TYPE_KEYWORD;
+		cell->string_content =
+			scm_to_locale_string( scm_symbol_to_string( scm_keyword_to_symbol( scm ) ) );
+		return;
+		}
+
+	// '-1.2' is a real
+	//
+	if ( scm_is_real( scm ) )
+		{
+//printf("Real\n");
+		cell->type = TYPE_DOUBLE;
+		cell->double_content = scm_to_double( scm );
+		return;
+		}
+
+	// '-1/2' is a rational (and complex, so test before complex)
+	//
+	if ( scm_is_rational( scm ) )
+		{
+//printf("rational\n");
+		cell->type = TYPE_RATIONAL;
+		cell->rational_content.numerator_part =
+			scm_to_double( scm_numerator( scm ) );
+		cell->rational_content.denominator_part =
+			 scm_to_double( scm_denominator( scm ) );
+		return;
+		}
+
+	// '-1i+2' is a complex
+	//
+	if ( scm_is_complex( scm ) )
+		{
+//printf("complex\n");
+		cell->type = TYPE_COMPLEX;
+		cell->complex_content.real_part =
+			scm_c_real_part( scm );
+		cell->complex_content.imag_part =
+			 scm_c_imag_part( scm );
+		return;
+		}
+
+	// '' is true and only 1 value, apparently.
+	//
+	if ( scm_is_true( scm ) )
+		{
+//printf("Void (fallback)\n");
+		cell->type = VOID;
+		return;
+		}
+	}
+
+static void _walk_scm( SCM scm, cons_cell* result )
+	{
+	int num_values = scm_c_nvalues( scm );
+	int i;
+
 	for ( i = 0; i < num_values; i++ )
 		{
 		SCM _scm = scm_c_value_ref( scm, i );
-		result[i].type = UNKNOWN_TYPE;
+		_scm_to_cell( _scm, result++ );
 		}
-	result[i+1].type = ZERO;
-*/
+	result->type = ZERO;
 	}
 
 void* _run( void* expression )
@@ -279,7 +268,7 @@ void* _run( void* expression )
 void* __dump( void* _expression )
 	{
 	char* expression = (char*) _expression;
-	SCM str = scm_from_latin1_string( expression );
+	SCM str = scm_from_utf8_string( expression );
 	SCM scm = scm_eval_string( str );
 
 	printf("SCM object from '%s' returns %d cells\n",
