@@ -66,7 +66,8 @@ typedef enum
 	TYPE_INTEGER = 3,
 	TYPE_STRING = 4,
 	TYPE_DOUBLE = 5,
-	TYPE_COMPLEX = 6,
+	TYPE_RATIONAL = 6,
+	TYPE_COMPLEX = 7,
 	}
 	cons_cell_type;
 
@@ -79,12 +80,20 @@ typedef struct
 
 typedef struct
 	{
+	double numerator_part;
+	double denominator_part;
+	}
+	rational_value;
+
+typedef struct
+	{
 	cons_cell_type type;
 	union
 		{
 		long  int_content;
 		char* string_content;
 		double double_content;
+		rational_value rational_content;
 		complex_value complex_content;
 		};
 	}
@@ -170,14 +179,30 @@ static void _walk_scm( SCM scm, cons_cell* result )
 			return;
 			}
 
-		// '-1i+2' is a real
+		// '-1/2' is a rational (and complex, so test before complex)
+		//
+		if ( scm_is_rational( scm ) )
+			{
+//printf("rational\n");
+			result[0].type = TYPE_RATIONAL;
+			result[0].rational_content.numerator_part =
+				scm_to_double( scm_numerator( scm ) );
+			result[0].rational_content.denominator_part =
+				 scm_to_double( scm_denominator( scm ) );
+			result[1].type = ZERO;
+			return;
+			}
+
+		// '-1i+2' is a complex
 		//
 		if ( scm_is_complex( scm ) )
 			{
-printf("complex\n");
+//printf("complex\n");
 			result[0].type = TYPE_COMPLEX;
-			result[0].complex_content.real_part = scm_c_real_part( scm );
-			result[0].complex_content.imag_part = scm_c_imag_part( scm );
+			result[0].complex_content.real_part =
+				scm_c_real_part( scm );
+			result[0].complex_content.imag_part =
+				 scm_c_imag_part( scm );
 			result[1].type = ZERO;
 			return;
 			}
@@ -186,7 +211,7 @@ printf("complex\n");
 		//
 		if ( scm_is_true( scm ) )
 			{
-printf("Void (fallback)\n");
+//printf("Void (fallback)\n");
 			result[0].type = VOID;
 			result[1].type = ZERO;
 			return;

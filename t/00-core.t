@@ -13,7 +13,8 @@ my $g = Inline::Scheme::Guile.new;
 
 is-deeply [ $g.run( q{}     ) ], [       ], q{empty};
 
-#$g._dump('-1.2');
+#$g._dump('-1+2i');
+$g._dump('-1/2');
 #$g.run('""');
 subtest sub
 	{
@@ -30,7 +31,10 @@ subtest sub
 	is-deeply [ $g.run( q{"foo"} ) ], [ "foo"  ], q{"foo"};
 	is-deeply [ $g.run( q{"£"}   ) ], [ "£"    ], q{"£"};
 	is-deeply [ $g.run( q{-1.2}  ) ], [ -1.2e0 ], q{-1.2 -> -1.2e0 (?)};
-	is-deeply [ $g.run( q{-1+2i} ) ], [ -1.0e0+2.0e0i  ], q{-1+2i -> -1.0e0+2.0e0i};
+	is-deeply [ $g.run( q{-1/2}  ) ], [ -1.0e0/2.0e0  ],
+		  q{-1/2 -> -1.0e0/2.0e0};
+	is-deeply [ $g.run( q{-1+2i} ) ], [ -1.0e0+2.0e0i  ],
+		  q{-1+2i -> -1.0e0+2.0e0i};
 	},
 	q{Single atom};
 

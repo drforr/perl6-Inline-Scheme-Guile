@@ -8,7 +8,8 @@ constant TYPE_BOOL = 2;
 constant TYPE_INTEGER = 3;
 constant TYPE_STRING = 4;
 constant TYPE_DOUBLE = 5;
-constant TYPE_COMPLEX = 6;
+constant TYPE_RATIONAL = 6;
+constant TYPE_COMPLEX = 7;
 
 class Inline::Scheme::Guile::AltDouble is repr('CStruct')
 	{
@@ -77,6 +78,14 @@ class Inline::Scheme::Guile
 					{
 					my $content = $cell.deref.content;
 					@stuff.push( $content.complex_content.real_part + ( $content.complex_content.imag_part * i ) );
+					}
+
+				when TYPE_RATIONAL
+					{
+					my $content = $cell.deref.content;
+					@stuff.push(
+						$content.rational_content.numerator_part /
+						$content.rational_content.denominator_part );
 					}
 
 				when TYPE_DOUBLE
