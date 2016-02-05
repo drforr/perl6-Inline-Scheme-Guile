@@ -1,15 +1,20 @@
 use NativeCall;
 
-constant UNKNOWN_TYPE = -2;
-constant VOID = -1;
-constant ZERO = 0;
-constant TYPE_NIL = 1;
-constant TYPE_BOOL = 2;
-constant TYPE_INTEGER = 3;
-constant TYPE_STRING = 4;
-constant TYPE_DOUBLE = 5;
+constant UNKNOWN_TYPE  = -2;
+constant VOID          = -1;
+constant ZERO          = 0;
+constant TYPE_NIL      = 1;
+constant TYPE_BOOL     = 2;
+constant TYPE_INTEGER  = 3;
+constant TYPE_STRING   = 4;
+constant TYPE_DOUBLE   = 5;
 constant TYPE_RATIONAL = 6;
-constant TYPE_COMPLEX = 7;
+constant TYPE_COMPLEX  = 7;
+constant TYPE_SYMBOL   = 8;
+constant TYPE_KEYWORD  = 9;
+
+class Inline::Scheme::Guile::Symbol { has Str $.name }
+class Inline::Scheme::Guile::Keyword { has Str $.name }
 
 class Inline::Scheme::Guile::AltDouble is repr('CStruct')
 	{
@@ -68,6 +73,18 @@ class Inline::Scheme::Guile
 			my $type = $cell.deref.type;
 			given $type
 				{
+				when TYPE_KEYWORD
+					{
+					my $content = $cell.deref.content;
+					@stuff.push( Inline::Scheme::Guile::Keyword.new( :name($content.string_content) ) );
+					}
+
+				when TYPE_SYMBOL
+					{
+					my $content = $cell.deref.content;
+					@stuff.push( Inline::Scheme::Guile::Symbol.new( :name($content.string_content) ) );
+					}
+
 				when TYPE_STRING
 					{
 					my $content = $cell.deref.content;

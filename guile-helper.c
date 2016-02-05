@@ -3,30 +3,29 @@
 
 static void dump_scm( SCM scm )
 	{
-	printf("null               : %d\n", scm_is_null              ( scm ));
-	printf("bool               : %d\n", scm_is_bool              ( scm ));
-	printf("false              : %d\n", scm_is_false             ( scm ));
-	printf("true               : %d\n", scm_is_true              ( scm ));
-	printf("integer            : %d\n", scm_is_integer           ( scm ));
-	printf("string             : %d\n", scm_is_string            ( scm ));
-	printf("symbol             : %d\n", scm_is_symbol            ( scm ));
+	printf("null              X: %d\n", scm_is_null              ( scm ));
+	printf("bool              X: %d\n", scm_is_bool              ( scm ));
+	printf("false             X: %d\n", scm_is_false             ( scm ));
+	printf("true              X: %d\n", scm_is_true              ( scm ));
+	printf("integer           X: %d\n", scm_is_integer           ( scm ));
+	printf("string            X: %d\n", scm_is_string            ( scm ));
+	printf("symbol            X: %d\n", scm_is_symbol            ( scm ));
 	printf("array              : %d\n", scm_is_array             ( scm ));
 	printf("bitvector          : %d\n", scm_is_bitvector         ( scm ));
 	printf("bytevector         : %d\n", scm_is_bytevector        ( scm ));
-	printf("complex            : %d\n", scm_is_complex           ( scm ));
+	printf("complex           X: %d\n", scm_is_complex           ( scm ));
 	printf("dynamic_state      : %d\n", scm_is_dynamic_state     ( scm ));
 /*
 	printf("exact              : %d\n", scm_is_exact             ( scm ));
 */
-	printf("fluid              : %d\n", scm_is_fluid             ( scm ));
 	printf("generalized_vector : %d\n", scm_is_generalized_vector( scm ));
 /*
 	printf("inexact            : %d\n", scm_is_inexact           ( scm ));
 */
-	printf("keyword            : %d\n", scm_is_keyword           ( scm ));
-	printf("number             : %d\n", scm_is_number            ( scm ));
-	printf("rational           : %d\n", scm_is_rational          ( scm ));
-	printf("real               : %d\n", scm_is_real              ( scm ));
+	printf("keyword           X: %d\n", scm_is_keyword           ( scm ));
+	printf("number            X: %d\n", scm_is_number            ( scm ));
+	printf("rational          X: %d\n", scm_is_rational          ( scm ));
+	printf("real              X: %d\n", scm_is_real              ( scm ));
 	//printf("signed_integer     : %d\n", scm_is_signed_integer    ( scm ));
 	printf("simple_vector      : %d\n", scm_is_simple_vector     ( scm ));
 	//printf("typed_array        : %d\n", scm_is_typed_array       ( scm ));
@@ -58,16 +57,18 @@ SCM_INTERNAL int scm_i_is_narrow_symbol (SCM str);
 
 typedef enum
 	{
-	UNKNOWN_TYPE = -2,
-	VOID = -1,
-	ZERO = 0,
-	TYPE_NIL = 1, // Yes, redundant, but matching the Perl...
-	TYPE_BOOL = 2,
-	TYPE_INTEGER = 3,
-	TYPE_STRING = 4,
-	TYPE_DOUBLE = 5,
+	UNKNOWN_TYPE  = -2,
+	VOID          = -1,
+	ZERO          = 0,
+	TYPE_NIL      = 1, // Yes, redundant, but matching the Perl...
+	TYPE_BOOL     = 2,
+	TYPE_INTEGER  = 3,
+	TYPE_STRING   = 4,
+	TYPE_DOUBLE   = 5,
 	TYPE_RATIONAL = 6,
-	TYPE_COMPLEX = 7,
+	TYPE_COMPLEX  = 7,
+	TYPE_SYMBOL   = 8,
+	TYPE_KEYWORD  = 9,
 	}
 	cons_cell_type;
 
@@ -164,6 +165,30 @@ static void _walk_scm( SCM scm, cons_cell* result )
 //printf("String\n");
 			result[0].type = TYPE_STRING;
 			result[0].string_content = scm_to_locale_string( scm );
+			result[1].type = ZERO;
+			return;
+			}
+
+		// "'a" is an symbol
+		//
+		if ( scm_is_symbol( scm ) )
+			{
+//printf("Symbol\n");
+			result[0].type = TYPE_SYMBOL;
+			result[0].string_content =
+				scm_to_locale_string( scm_symbol_to_string( scm ) );
+			result[1].type = ZERO;
+			return;
+			}
+
+		// '#:a" is an keyword
+		//
+		if ( scm_is_keyword( scm ) )
+			{
+//printf("keyword\n");
+			result[0].type = TYPE_KEYWORD;
+			result[0].string_content =
+				scm_to_locale_string( scm_symbol_to_string( scm_keyword_to_symbol( scm ) ) );
 			result[1].type = ZERO;
 			return;
 			}

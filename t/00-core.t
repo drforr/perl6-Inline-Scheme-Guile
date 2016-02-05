@@ -14,7 +14,7 @@ my $g = Inline::Scheme::Guile.new;
 is-deeply [ $g.run( q{}     ) ], [       ], q{empty};
 
 #$g._dump('-1+2i');
-$g._dump('-1/2');
+#$g._dump('-1/2');
 #$g.run('""');
 subtest sub
 	{
@@ -35,6 +35,9 @@ subtest sub
 		  q{-1/2 -> -1.0e0/2.0e0};
 	is-deeply [ $g.run( q{-1+2i} ) ], [ -1.0e0+2.0e0i  ],
 		  q{-1+2i -> -1.0e0+2.0e0i};
+
+	is-deeply [ $g.run( q{'a} ) ], [ Inline::Scheme::Guile::Symbol.new( :name('a') ) ], q{'a -> ::Symbol};
+	is-deeply [ $g.run( q{#:a} ) ], [ Inline::Scheme::Guile::Keyword.new( :name('a') ) ], q{#:a -> ::Keyword};
 	},
 	q{Single atom};
 
