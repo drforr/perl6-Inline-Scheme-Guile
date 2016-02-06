@@ -14,7 +14,7 @@ my $g = Inline::Scheme::Guile.new;
 is-deeply [ $g.run( q{}         ) ], [ ], q{empty};
 is-deeply [ $g.run( q{(values)} ) ], [ ], q{(values) -> empty};
 
-#$g._dump('-1+2i');
+#$g._dump('#()');
 #$g._dump('-1/2');
 #$g.run('""');
 subtest sub

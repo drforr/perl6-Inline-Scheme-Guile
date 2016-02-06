@@ -100,11 +100,51 @@ typedef struct
 	}
 	cons_cell;
 
+static size_t _num_cells(); // Forward declaration
+
+static size_t _num_vector_cells( SCM scm )
+	{
+	size_t num_cells = 2; // VECTOR_START and VECTOR_END
+	int num_values = scm_c_vector_length( scm );
+	int i;
+
+	for ( i = 0; i < num_values; i++ )
+		{
+		SCM _scm = scm_c_vector_ref( scm, i );
+		num_cells += _num_cells( _scm );
+		}
+
+	return num_cells;
+	}
+
+static size_t _num_cells( SCM scm )
+	{
+	if ( scm_is_bool(     scm ) ) return 1; // '#t', '#f', '#nil'
+	if ( scm_is_integer(  scm ) ) return 1; // '2'
+	if ( scm_is_string(   scm ) ) return 1; // '"foo"'
+	if ( scm_is_symbol(   scm ) ) return 1; // "'a"
+	if ( scm_is_keyword(  scm ) ) return 1; // '#:foo'
+	if ( scm_is_real(     scm ) ) return 1; // '-1.2'
+	if ( scm_is_rational( scm ) ) return 1; // '-1/2'
+	if ( scm_is_complex(  scm ) ) return 1; // '1+2i'
+
+	if ( scm_is_vector( scm ) ) return _num_vector_cells( scm ); // #(1 2)
+
+	if ( scm_is_true( scm ) ) return 1;
+printf("Uncovered cell type!\n");
+	}
+
 static size_t _count_cells( SCM scm )
 	{
 	size_t num_cells = 1; // Start with the sentinel
+	int num_values = scm_c_nvalues( scm );
+	int i;
 
-	num_cells += scm_c_nvalues( scm );
+	for ( i = 0; i < num_values; i++ )
+		{
+		SCM _scm = scm_c_value_ref( scm, i );
+		num_cells += _num_cells( _scm );
+		}
 
 	return num_cells;
 	}
