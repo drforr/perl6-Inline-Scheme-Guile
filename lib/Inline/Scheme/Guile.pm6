@@ -58,10 +58,16 @@ test suite, but here's a brief summary of the important types:
   Map onto the (somewhat unwieldy) L<Inline::Scheme::Guile::Symbol> type.
   These have simply a C<:name('foo')> attribute.
 
+  'foo expands to the macro (quote foo) inside vectors, lists and pairs.
+  So don't expect to find the L<::Symbol> inside these constructs.
+
   =item Keywords (#:foo)
 
   Map onto the (somewhat unwieldy) L<Inline::Scheme::Guile::Keyword> type.
   These have simply a C<:name('foo')> attribute.
+
+  Keywords don't have an equivalent quoted form, so they will appear verbatim
+  in lists, vectors and such.
 
   =item List ('(1 2 3))
 
@@ -187,16 +193,16 @@ class Inline::Scheme::Guile
 			when TYPE_KEYWORD
 				{
 				my $content = $cell.deref.content;
-				$state.<stuff>.push(
+				self._push_value( $state,
 				  Inline::Scheme::Guile::Keyword.new(
 				    :name($content.string_content) ) );
 				}
 
+			# Scheme expands 'a to (quote a) in lists and vectors.
 			when TYPE_SYMBOL
 				{
 				my $content = $cell.deref.content;
-#				$state.<stuff>.push(
-self._push_value( $state,
+				self._push_value( $state,
 				  Inline::Scheme::Guile::Symbol.new(
 				    :name($content.string_content) ) );
 				}

@@ -68,10 +68,15 @@ subtest sub
                   [ Inline::Scheme::Guile::Vector.new( :value( 1, 2 ) ) ],
                   q{#(1 2) -> ::Vector};
 
-	is-deeply [ $g.run( q{#(#nil #t 1 2.3 2/3 -1+2i "foo")} ) ],
+	# #('a) returns as #( (quote a) ), so a list.
+	#
+	is-deeply [ $g.run( q{#(#nil #t 1 2.3 2/3 -1+2i "foo" #:bar)} ) ],
                   [ Inline::Scheme::Guile::Vector.new(
-		      :value( Nil, True, 1, 2.3e0, 2.0e0/3.0e0, -1.0e0+2.0e0i, "foo" ) ) ],
-                  q{#(#nil #t 1 2.3 2/3 -1+2i "foo") -> ::Vector};
+		      :value( Nil, True, 1, 2.3e0, 2.0e0/3.0e0,
+			      -1.0e0+2.0e0i, "foo",
+			      Inline::Scheme::Guile::Keyword.new( :name('bar') )
+ ) ) ],
+                  q{#(#nil #t 1 2.3 2/3 -1+2i "foo" #:bar) -> ::Vector};
 	},
 	q{Composite atom};
 
