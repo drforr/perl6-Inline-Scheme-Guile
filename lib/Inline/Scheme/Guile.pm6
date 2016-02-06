@@ -227,7 +227,7 @@ class Inline::Scheme::Guile
 				{
 				my $content = $cell.deref.content;
 				my $rational = $content.rational_content;
-				$state.<stuff>.push(
+				self._push_value( $state,
 				  $rational.numerator_part /
 				  $rational.denominator_part );
 				}
