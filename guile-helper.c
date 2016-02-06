@@ -34,29 +34,13 @@ static void dump_scm( SCM scm )
 	printf("vector             : %d\n", scm_is_vector            ( scm ));
 	printf("pair               : %d\n", scm_is_pair              ( scm ));
         printf("\n");
-/*
-#define scm_is_bool_and_not_nil(x)  \
-#define scm_is_bool_or_nil(x)  \
-#define scm_is_eq(x, y) (SCM_UNPACK (x) == SCM_UNPACK (y))
-#define scm_is_false_and_not_nil(x)     (scm_is_eq ((x), SCM_BOOL_F))
-#define scm_is_false_assume_not_nil(x)  (scm_is_eq ((x), SCM_BOOL_F))
-#define scm_is_false_or_nil(x)    \
-#define scm_is_lisp_false(x)  \
-#define scm_is_null_and_not_nil(x)     (scm_is_eq ((x), SCM_EOL))
-#define scm_is_null_assume_not_nil(x)  (scm_is_eq ((x), SCM_EOL))
-#define scm_is_null_or_nil(x)  \
-#define scm_is_true_and_not_nil(x) (!scm_is_false_or_nil (x))
-#define scm_is_true_assume_not_nil(x)  (!scm_is_eq ((x), SCM_BOOL_F))
-#define scm_is_true_or_nil(x)          (!scm_is_eq ((x), SCM_BOOL_F))
-#define scm_i_symbol_is_interned(x) \
-SCM_API SCM scm_char_is_both_p
-SCM_INTERNAL int scm_i_is_narrow_string (SCM str);
-SCM_INTERNAL int scm_i_is_narrow_symbol (SCM str);
-*/
 	}
 
 typedef enum
 	{
+	VECTOR_START  = -256,
+	VECTOR_END    = -255,
+
 	UNKNOWN_TYPE  = -2,
 	VOID          = -1,
 	ZERO          = 0,
@@ -108,6 +92,8 @@ static size_t _num_vector_cells( SCM scm )
 	int num_values = scm_c_vector_length( scm );
 	int i;
 
+	// Note _num_vector_cells calls _num_cells, so it should do the
+	// recursive thing.
 	for ( i = 0; i < num_values; i++ )
 		{
 		SCM _scm = scm_c_vector_ref( scm, i );
@@ -128,10 +114,11 @@ static size_t _num_cells( SCM scm )
 	if ( scm_is_rational( scm ) ) return 1; // '-1/2'
 	if ( scm_is_complex(  scm ) ) return 1; // '1+2i'
 
-	if ( scm_is_vector( scm ) ) return _num_vector_cells( scm ); // #(1 2)
+	if ( scm_is_vector(   scm ) ) return _num_vector_cells( scm ); // #(1 2)
 
 	if ( scm_is_true( scm ) ) return 1;
 printf("Uncovered cell type!\n");
+	return 0;
 	}
 
 static size_t _count_cells( SCM scm )
@@ -149,7 +136,27 @@ static size_t _count_cells( SCM scm )
 	return num_cells;
 	}
 
-static void _scm_to_cell( SCM scm, cons_cell* cell )
+static size_t _scm_to_cell( SCM scm, cons_cell* cell ); // Forward declaration
+
+static size_t _scm_vector_to_cell( SCM scm, cons_cell* cell )
+	{
+	int num_values = scm_c_vector_length( scm );
+	int i;
+
+	cell->type = VECTOR_START;
+	cell++;
+	for ( i = 0; i < num_values; i++ )
+		{
+		SCM _scm = scm_c_vector_ref( scm, i );
+		cell += _scm_to_cell( _scm, cell );
+		}
+
+	cell->type = VECTOR_END;
+	cell++;
+	return num_values + 2;
+	}
+
+static size_t _scm_to_cell( SCM scm, cons_cell* cell )
 	{
 	if ( scm_is_bool( scm ) )
 		{
@@ -179,7 +186,7 @@ static void _scm_to_cell( SCM scm, cons_cell* cell )
 			cell->type = TYPE_BOOL;
 			cell->int_content = 1;
 			}
-		return;
+		return 1;
 		}
 
 	// '2' is an integer
@@ -189,7 +196,7 @@ static void _scm_to_cell( SCM scm, cons_cell* cell )
 //printf("Integer\n");
 		cell->type = TYPE_INTEGER;
 		cell->int_content = scm_to_int( scm );
-		return;
+		return 1;
 		}
 
 	// '""' is an string
@@ -199,7 +206,7 @@ static void _scm_to_cell( SCM scm, cons_cell* cell )
 //printf("String\n");
 		cell->type = TYPE_STRING;
 		cell->string_content = scm_to_locale_string( scm );
-		return;
+		return 1;
 		}
 
 	// "'a" is an symbol
@@ -210,7 +217,7 @@ static void _scm_to_cell( SCM scm, cons_cell* cell )
 		cell->type = TYPE_SYMBOL;
 		cell->string_content =
 			scm_to_locale_string( scm_symbol_to_string( scm ) );
-		return;
+		return 1;
 		}
 
 	// '#:a" is an keyword
@@ -221,7 +228,7 @@ static void _scm_to_cell( SCM scm, cons_cell* cell )
 		cell->type = TYPE_KEYWORD;
 		cell->string_content =
 			scm_to_locale_string( scm_symbol_to_string( scm_keyword_to_symbol( scm ) ) );
-		return;
+		return 1;
 		}
 
 	// '-1.2' is a real
@@ -231,7 +238,7 @@ static void _scm_to_cell( SCM scm, cons_cell* cell )
 //printf("Real\n");
 		cell->type = TYPE_DOUBLE;
 		cell->double_content = scm_to_double( scm );
-		return;
+		return 1;
 		}
 
 	// '-1/2' is a rational (and complex, so test before complex)
@@ -244,7 +251,7 @@ static void _scm_to_cell( SCM scm, cons_cell* cell )
 			scm_to_double( scm_numerator( scm ) );
 		cell->rational_content.denominator_part =
 			 scm_to_double( scm_denominator( scm ) );
-		return;
+		return 1;
 		}
 
 	// '-1i+2' is a complex
@@ -257,7 +264,15 @@ static void _scm_to_cell( SCM scm, cons_cell* cell )
 			scm_c_real_part( scm );
 		cell->complex_content.imag_part =
 			 scm_c_imag_part( scm );
-		return;
+		return 1;
+		}
+
+	// '#(1 2 3)' is a vector, remember it can include other things.
+	//
+	if ( scm_is_vector( scm ) )
+		{
+//printf("vector\n");
+		return _scm_vector_to_cell( scm, cell );
 		}
 
 	// '' is true and only 1 value, apparently.
@@ -266,8 +281,10 @@ static void _scm_to_cell( SCM scm, cons_cell* cell )
 		{
 //printf("Void (fallback)\n");
 		cell->type = VOID;
-		return;
+		return 1;
 		}
+printf("Unknown cell type, not advancing pointer.\n");
+	return 0;
 	}
 
 static void _walk_scm( SCM scm, cons_cell* result )
@@ -278,7 +295,7 @@ static void _walk_scm( SCM scm, cons_cell* result )
 	for ( i = 0; i < num_values; i++ )
 		{
 		SCM _scm = scm_c_value_ref( scm, i );
-		_scm_to_cell( _scm, result++ );
+		result += _scm_to_cell( _scm, result );
 		}
 	result->type = ZERO;
 	}

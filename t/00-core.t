@@ -46,6 +46,19 @@ subtest sub
 	{
 	plan 2;
 
+	is-deeply [ $g.run( q{#()} ) ],
+                  [ Inline::Scheme::Guile::Vector.new( :value() ) ],
+                  q{#() -> ::Vector};
+	is-deeply [ $g.run( q{#(1)} ) ],
+                  [ Inline::Scheme::Guile::Vector.new( :value(1) ) ],
+                  q{#(1) -> ::Vector};
+	},
+	q{Composite atoms};
+
+subtest sub
+	{
+	plan 2;
+
 	is-deeply [ $g.run( q{(values 1 2)} ) ],
 		  [ 1, 2 ],
 		  q{(values 1 2) returns a list of values};
