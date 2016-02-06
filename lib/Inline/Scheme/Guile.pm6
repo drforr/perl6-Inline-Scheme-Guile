@@ -150,11 +150,6 @@ class Inline::Scheme::Guile
 		_dump( $expression );
 		}
 
-	sub run( Str $expression,
-		 &marshal_guile (Pointer[Inline::Scheme::Guile::ConsCell]) )
-		   { ... }
-		native(&run);
-
 	method _push_value( $state, $content )
 		{
 		if $state.<vector-depth>
@@ -180,7 +175,8 @@ class Inline::Scheme::Guile
 			when VECTOR_START
 				{
 				$state.<vector-depth>++;
-				$state.<stuff>.push( Inline::Scheme::Guile::Vector.new );
+				$state.<stuff>.push(
+				  Inline::Scheme::Guile::Vector.new );
 				}
 
 			when VECTOR_START
@@ -191,26 +187,32 @@ class Inline::Scheme::Guile
 			when TYPE_KEYWORD
 				{
 				my $content = $cell.deref.content;
-				$state.<stuff>.push( Inline::Scheme::Guile::Keyword.new( :name($content.string_content) ) );
+				$state.<stuff>.push(
+				  Inline::Scheme::Guile::Keyword.new(
+				    :name($content.string_content) ) );
 				}
 
 			when TYPE_SYMBOL
 				{
 				my $content = $cell.deref.content;
-				$state.<stuff>.push( Inline::Scheme::Guile::Symbol.new( :name($content.string_content) ) );
+#				$state.<stuff>.push(
+self._push_value( $state,
+				  Inline::Scheme::Guile::Symbol.new(
+				    :name($content.string_content) ) );
 				}
 
 			when TYPE_STRING
 				{
 				my $content = $cell.deref.content;
-				self._push_value( $state, $content.string_content );
+				my $string = $content.string_content;
+				self._push_value( $state, $string );
 				}
 
 			when TYPE_COMPLEX
 				{
 				my $content = $cell.deref.content;
 				my $complex = $content.complex_content;
-				$state.<stuff>.push(
+				self._push_value( $state,
 				  $complex.real_part +
 				  ( $complex.imag_part * i ) );
 				}
@@ -234,38 +236,31 @@ class Inline::Scheme::Guile
 			when TYPE_INTEGER
 				{
 				my $content = $cell.deref.content;
-				self._push_value( $state, $content.int_content );
+				my $int     = $content.int_content;
+				self._push_value( $state, $int );
 				}
 
 			when TYPE_BOOL
 				{
 				my $content = $cell.deref.content;
-				if $content.int_content == 1
-					{
-					$state.<stuff>.push( True );
-					}
-				else
-					{
-					$state.<stuff>.push( False );
-					}
+				self._push_value(
+				  $state,
+				  $content.int_content == 1 ?? True !! False );
 				}
 
-			when TYPE_NIL
-				{
-				$state.<stuff>.push( Nil );
-				}
+			when TYPE_NIL { self._push_value( $state, Nil ) }
 
-			when VOID
-				{
-				# Don't do anything in this case.
-				}
+			# Don't do anything in this case.
+			when VOID { }
 
-			when UNKNOWN_TYPE
-				{
-				warn "Unknown type caught\n";
-				}
+			when UNKNOWN_TYPE { warn "Unknown type caught\n" }
 			}
 		}
+
+	sub run( Str $expression,
+		 &marshal_guile (Pointer[Inline::Scheme::Guile::ConsCell]) )
+		   { ... }
+		native(&run);
 
 	method run( Str $expression )
 		{

@@ -3,8 +3,6 @@
 use v6;
 use Test;
 
-use NativeCall;
-
 plan 6;
 
 use Inline::Scheme::Guile;
@@ -22,15 +20,15 @@ subtest sub
 	plan 10;
 
 # Anything that returns 0 to Perl 6 dies.
-	is-deeply [ $g.run( q{#nil}  ) ], [ Nil    ], q{#nil};
-#	is-deeply [ $g.run( q{#f}    ) ], [ False  ], q{#f};
-	is-deeply [ $g.run( q{#t}    ) ], [ True   ], q{#t};
-#	is-deeply [ $g.run( q{0}     ) ], [ 0      ], q{0};
-	is-deeply [ $g.run( q{1}     ) ], [ 1      ], q{1};
-	is-deeply [ $g.run( q{-1}    ) ], [ -1     ], q{-1};
-	is-deeply [ $g.run( q{""}    ) ], [ ""     ], q{""};
-	is-deeply [ $g.run( q{"foo"} ) ], [ "foo"  ], q{"foo"};
-	is-deeply [ $g.run( q{"£"}   ) ], [ "£"    ], q{"£"};
+	is-deeply [ $g.run( q{#nil}  ) ], [ Nil   ], q{#nil};
+#	is-deeply [ $g.run( q{#f}    ) ], [ False ], q{#f};
+	is-deeply [ $g.run( q{#t}    ) ], [ True  ], q{#t};
+#	is-deeply [ $g.run( q{0}     ) ], [ 0     ], q{0};
+	is-deeply [ $g.run( q{1}     ) ], [ 1     ], q{1};
+	is-deeply [ $g.run( q{-1}    ) ], [ -1    ], q{-1};
+	is-deeply [ $g.run( q{""}    ) ], [ ""    ], q{""};
+	is-deeply [ $g.run( q{"foo"} ) ], [ "foo" ], q{"foo"};
+	is-deeply [ $g.run( q{"£"}   ) ], [ "£"   ], q{"£"};
 
 	is-deeply [ $g.run( q{-1.2} ) ],
 		  [ -1.2e0 ],
@@ -61,18 +59,21 @@ subtest sub
 	is-deeply [ $g.run( q{#()} ) ],
                   [ Inline::Scheme::Guile::Vector.new( :value( ) ) ],
                   q{#() -> ::Vector};
+
 	is-deeply [ $g.run( q{#(1)} ) ],
                   [ Inline::Scheme::Guile::Vector.new( :value( 1 ) ) ],
                   q{#(1) -> ::Vector};
+
 	is-deeply [ $g.run( q{#(1 2)} ) ],
                   [ Inline::Scheme::Guile::Vector.new( :value( 1, 2 ) ) ],
                   q{#(1 2) -> ::Vector};
-	is-deeply [ $g.run( q{#(1 2.3 2/3 "foo")} ) ],
+
+	is-deeply [ $g.run( q{#(#nil #t 1 2.3 2/3 -1+2i "foo")} ) ],
                   [ Inline::Scheme::Guile::Vector.new(
-		      :value( 1, 2.3e0, 2.0e0/3.0e0, "foo" ) ) ],
-                  q{#(1 2.3 2/3 "foo") -> ::Vector};
+		      :value( Nil, True, 1, 2.3e0, 2.0e0/3.0e0, -1.0e0+2.0e0i, "foo" ) ) ],
+                  q{#(#nil #t 1 2.3 2/3 -1+2i "foo") -> ::Vector};
 	},
-	q{Composite atoms};
+	q{Composite atom};
 
 subtest sub
 	{
@@ -93,6 +94,7 @@ subtest sub
 	plan 1;
 
 	$g.run( q{(define (inc-it x) (+ x 1))} );
+
 	is-deeply [ $g.run( q{(inc-it 2)} ) ], [ 3 ], q{(inc-it 2) is 3};
 	},
 	q{Environment persists};
