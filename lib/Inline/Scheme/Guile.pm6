@@ -155,110 +155,127 @@ class Inline::Scheme::Guile
 		   { ... }
 		native(&run);
 
+	method _push_value( $state, $content )
+		{
+		if $state.<vector-depth>
+			{
+			$state.<stuff>[*-1].value.push( $content );
+			}
+		else
+			{
+			$state.<stuff>.push( $content );
+			}
+		}
+
+	method _push_cell( $cell, $state )
+		{
+		CATCH
+			{
+			warn "Don't die in callback, warn instead.\n";
+			warn $_;
+			}
+		my $type = $cell.deref.type;
+		given $type
+			{
+			when VECTOR_START
+				{
+				$state.<vector-depth>++;
+				$state.<stuff>.push( Inline::Scheme::Guile::Vector.new );
+				}
+
+			when VECTOR_START
+				{
+				$state.<vector-depth>--;
+				}
+
+			when TYPE_KEYWORD
+				{
+				my $content = $cell.deref.content;
+				$state.<stuff>.push( Inline::Scheme::Guile::Keyword.new( :name($content.string_content) ) );
+				}
+
+			when TYPE_SYMBOL
+				{
+				my $content = $cell.deref.content;
+				$state.<stuff>.push( Inline::Scheme::Guile::Symbol.new( :name($content.string_content) ) );
+				}
+
+			when TYPE_STRING
+				{
+				my $content = $cell.deref.content;
+				self._push_value( $state, $content.string_content );
+				}
+
+			when TYPE_COMPLEX
+				{
+				my $content = $cell.deref.content;
+				my $complex = $content.complex_content;
+				$state.<stuff>.push(
+				  $complex.real_part +
+				  ( $complex.imag_part * i ) );
+				}
+
+			when TYPE_RATIONAL
+				{
+				my $content = $cell.deref.content;
+				my $rational = $content.rational_content;
+				$state.<stuff>.push(
+				  $rational.numerator_part /
+				  $rational.denominator_part );
+				}
+
+			when TYPE_DOUBLE
+				{
+				my $content = $cell.deref.content;
+				my $double  = $content.double_content;
+				self._push_value( $state, $double );
+				}
+
+			when TYPE_INTEGER
+				{
+				my $content = $cell.deref.content;
+				self._push_value( $state, $content.int_content );
+				}
+
+			when TYPE_BOOL
+				{
+				my $content = $cell.deref.content;
+				if $content.int_content == 1
+					{
+					$state.<stuff>.push( True );
+					}
+				else
+					{
+					$state.<stuff>.push( False );
+					}
+				}
+
+			when TYPE_NIL
+				{
+				$state.<stuff>.push( Nil );
+				}
+
+			when VOID
+				{
+				# Don't do anything in this case.
+				}
+
+			when UNKNOWN_TYPE
+				{
+				warn "Unknown type caught\n";
+				}
+			}
+		}
+
 	method run( Str $expression )
 		{
 		my @stuff;
 		my $vector-depth = 0;
+		my $state = { vector-depth => 0 };
+		$state.<stuff> := @stuff;
 		my $ref = sub ( Pointer[Inline::Scheme::Guile::ConsCell] $cell )
 			{
-			CATCH
-				{
-				warn "Don't die in callback, warn instead.\n";
-				warn $_;
-				}
-			my $type = $cell.deref.type;
-			given $type
-				{
-				when VECTOR_START
-					{
-					$vector-depth++;
-					@stuff.push( Inline::Scheme::Guile::Vector.new );
-					}
-
-				when VECTOR_START
-					{
-					$vector-depth--;
-					}
-
-				when TYPE_KEYWORD
-					{
-					my $content = $cell.deref.content;
-					@stuff.push( Inline::Scheme::Guile::Keyword.new( :name($content.string_content) ) );
-					}
-
-				when TYPE_SYMBOL
-					{
-					my $content = $cell.deref.content;
-					@stuff.push( Inline::Scheme::Guile::Symbol.new( :name($content.string_content) ) );
-					}
-
-				when TYPE_STRING
-					{
-					my $content = $cell.deref.content;
-					@stuff.push( $content.string_content );
-					}
-
-				when TYPE_COMPLEX
-					{
-					my $content = $cell.deref.content;
-					@stuff.push( $content.complex_content.real_part + ( $content.complex_content.imag_part * i ) );
-					}
-
-				when TYPE_RATIONAL
-					{
-					my $content = $cell.deref.content;
-					@stuff.push(
-						$content.rational_content.numerator_part /
-						$content.rational_content.denominator_part );
-					}
-
-				when TYPE_DOUBLE
-					{
-					my $content = $cell.deref.content;
-					@stuff.push( $content.double_content );
-					}
-
-				when TYPE_INTEGER
-					{
-					my $content = $cell.deref.content;
-					if $vector-depth
-						{
-						@stuff[*-1].value.push( $content.int_content );
-						}
-					else
-						{
-						@stuff.push( $content.int_content );
-						}
-					}
-
-				when TYPE_BOOL
-					{
-					my $content = $cell.deref.content;
-					if $content.int_content == 1
-						{
-						@stuff.push( True );
-						}
-					else
-						{
-						@stuff.push( False );
-						}
-					}
-
-				when TYPE_NIL
-					{
-					@stuff.push( Nil );
-					}
-
-				when VOID
-					{
-					# Don't do anything in this case.
-					}
-
-				when UNKNOWN_TYPE
-					{
-					warn "Unknown type caught\n";
-					}
-				}
+			self._push_cell( $cell, $state );
 			}
 		run( $expression, $ref );
 		return @stuff;

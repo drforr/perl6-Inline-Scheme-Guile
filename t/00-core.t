@@ -5,7 +5,7 @@ use Test;
 
 use NativeCall;
 
-plan 2;
+plan 6;
 
 use Inline::Scheme::Guile;
 
@@ -31,27 +31,46 @@ subtest sub
 	is-deeply [ $g.run( q{""}    ) ], [ ""     ], q{""};
 	is-deeply [ $g.run( q{"foo"} ) ], [ "foo"  ], q{"foo"};
 	is-deeply [ $g.run( q{"£"}   ) ], [ "£"    ], q{"£"};
-	is-deeply [ $g.run( q{-1.2}  ) ], [ -1.2e0 ], q{-1.2 -> -1.2e0 (?)};
-	is-deeply [ $g.run( q{-1/2}  ) ], [ -1.0e0/2.0e0  ],
+
+	is-deeply [ $g.run( q{-1.2} ) ],
+		  [ -1.2e0 ],
+		  q{-1.2 -> -1.2e0 (?)};
+
+	is-deeply [ $g.run( q{-1/2} ) ],
+		  [ -1.0e0/2.0e0  ],
 		  q{-1/2 -> -1.0e0/2.0e0};
-	is-deeply [ $g.run( q{-1+2i} ) ], [ -1.0e0+2.0e0i  ],
+
+	is-deeply [ $g.run( q{-1+2i} ) ],
+		  [ -1.0e0+2.0e0i  ],
 		  q{-1+2i -> -1.0e0+2.0e0i};
 
-	is-deeply [ $g.run( q{'a} ) ], [ Inline::Scheme::Guile::Symbol.new( :name('a') ) ], q{'a -> ::Symbol};
-	is-deeply [ $g.run( q{#:a} ) ], [ Inline::Scheme::Guile::Keyword.new( :name('a') ) ], q{#:a -> ::Keyword};
+	is-deeply [ $g.run( q{'a} ) ],
+		  [ Inline::Scheme::Guile::Symbol.new( :name('a') ) ],
+		  q{'a -> ::Symbol};
+
+	is-deeply [ $g.run( q{#:a} ) ],
+		  [ Inline::Scheme::Guile::Keyword.new( :name('a') ) ],
+		  q{#:a -> ::Keyword};
 	},
 	q{Single atom};
 
 subtest sub
 	{
-	plan 2;
+	plan 3;
 
 	is-deeply [ $g.run( q{#()} ) ],
-                  [ Inline::Scheme::Guile::Vector.new( :value() ) ],
+                  [ Inline::Scheme::Guile::Vector.new( :value( ) ) ],
                   q{#() -> ::Vector};
 	is-deeply [ $g.run( q{#(1)} ) ],
-                  [ Inline::Scheme::Guile::Vector.new( :value(1) ) ],
+                  [ Inline::Scheme::Guile::Vector.new( :value( 1 ) ) ],
                   q{#(1) -> ::Vector};
+	is-deeply [ $g.run( q{#(1 2)} ) ],
+                  [ Inline::Scheme::Guile::Vector.new( :value( 1, 2 ) ) ],
+                  q{#(1 2) -> ::Vector};
+	is-deeply [ $g.run( q{#(1 2.3 2/3 "foo")} ) ],
+                  [ Inline::Scheme::Guile::Vector.new(
+		      :value( 1, 2.3e0, 2.0e0/3.0e0, "foo" ) ) ],
+                  q{#(1 2.3 2/3 "foo") -> ::Vector};
 	},
 	q{Composite atoms};
 
