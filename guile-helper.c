@@ -1,5 +1,6 @@
 #include <libguile.h>
 #include <stdio.h>
+#include "guile_helper.h"
 
 static void dump_scm( SCM scm )
 	{
@@ -36,8 +37,12 @@ static void dump_scm( SCM scm )
         printf("\n");
 	}
 
+/*
 typedef enum
 	{
+	BITVECTOR_START = -258,
+	BITVECTOR_END   = -258,
+
 	VECTOR_START  = -256,
 	VECTOR_END    = -255,
 
@@ -85,6 +90,7 @@ struct cons_cell
 	cons_cell* next;
 	cons_cell* previous;
 	};
+*/
 
 static void _display_list( cons_cell* head )
 	{
@@ -93,6 +99,15 @@ static void _display_list( cons_cell* head )
 		{
 		switch( head->type )
 			{
+			case BITVECTOR_START:
+				printf("%d BITVECTOR_START\n", depth);
+				depth++;
+				break;
+			case BITVECTOR_END:
+				depth--;
+				printf("%d BITVECTOR_END\n", depth);
+				break;
+                                                                      
 			case VECTOR_START:
 				printf("%d VECTOR_START\n", depth);
 				depth++;
@@ -161,6 +176,7 @@ static cons_cell* _find_tail( cons_cell* head )
 static cons_cell* _scm_to_cell( SCM scm )
 	{
 	cons_cell* new = _new_cons_cell();
+	new->type = UNKNOWN_TYPE;
 
 	if ( scm_is_bool( scm ) )
 		{
@@ -262,6 +278,31 @@ static cons_cell* _scm_to_cell( SCM scm )
 		new->complex_content.imag_part =
 			 scm_c_imag_part( scm );
 		}
+
+	// '#*011' is a bitvector
+	//
+	else if ( scm_is_bitvector( scm ) )
+		{
+		int i;
+		cons_cell* tail = new;
+		new->type = BITVECTOR_START;
+
+		for ( i = 0 ; i < scm_c_bitvector_length( scm ) ; i++ )
+			{
+			SCM _scm = scm_c_bitvector_ref( scm, i );
+			cons_cell* _head = _scm_to_cell( _scm );
+			cons_cell* _tail = _find_tail( _head );
+			tail->next = _head;
+			_head->previous = tail;
+			tail = _tail;
+			}
+		cons_cell* last = _new_cons_cell();
+		last->type = BITVECTOR_END;
+		tail->next = last;
+		last->previous = tail;
+//printf("bitvector\n");
+		}
+
 
 	// '#(1 2 3)' is a vector, remember it can include other things.
 	//

@@ -9,13 +9,16 @@ use Inline::Scheme::Guile;
 
 my $g = Inline::Scheme::Guile.new;
 
+#$g.run( q{#*001101} );
+#$g._dump( q{#*001101} );
+
 is-deeply [ $g.run( q{}         ) ], [ ], q{empty};
 is-deeply [ $g.run( q{(values)} ) ], [ ], q{(values) -> empty};
 
 #$g._dump('#()');
 subtest sub
 	{
-	plan 10;
+	plan 15;
 
 # Anything that returns 0 to Perl 6 dies.
 	is-deeply [ $g.run( q{#nil}  ) ], [ Nil   ], q{#nil};
@@ -47,6 +50,13 @@ subtest sub
 	is-deeply [ $g.run( q{#:a} ) ],
 		  [ Inline::Scheme::Guile::Keyword.new( :name('a') ) ],
 		  q{#:a -> ::Keyword};
+
+#`( False still dies.
+	is-deeply [ $g.run( q{#*000101} ) ],
+                  [ Inline::Scheme::Guile::Vector.new(
+		      :value( False, False, False, True, False, True ) ) ],
+                  q{#*000101 -> BitVector};
+)
 	},
 	q{Single atom};
 

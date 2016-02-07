@@ -97,25 +97,29 @@ so for consistency's sake all lists are considered references.
 
 =end pod
 
-constant VECTOR_START  = -256;
-constant VECTOR_END    = -255;
+constant BITVECTOR_START  = -258;
+constant BITVECTOR_END    = -257;
 
-constant UNKNOWN_TYPE  = -2;
-constant VOID          = -1;
-constant ZERO          = 0;
-constant TYPE_NIL      = 1;
-constant TYPE_BOOL     = 2;
-constant TYPE_INTEGER  = 3;
-constant TYPE_STRING   = 4;
-constant TYPE_DOUBLE   = 5;
-constant TYPE_RATIONAL = 6;
-constant TYPE_COMPLEX  = 7;
-constant TYPE_SYMBOL   = 8;
-constant TYPE_KEYWORD  = 9;
+constant VECTOR_START     = -256;
+constant VECTOR_END       = -255;
+                         
+constant UNKNOWN_TYPE     = -2;
+constant VOID             = -1;
+constant ZERO             = 0;
+constant TYPE_NIL         = 1;
+constant TYPE_BOOL        = 2;
+constant TYPE_INTEGER     = 3;
+constant TYPE_STRING      = 4;
+constant TYPE_DOUBLE      = 5;
+constant TYPE_RATIONAL    = 6;
+constant TYPE_COMPLEX     = 7;
+constant TYPE_SYMBOL      = 8;
+constant TYPE_KEYWORD     = 9;
 
 class Inline::Scheme::Guile::Symbol { has Str $.name }
 class Inline::Scheme::Guile::Keyword { has Str $.name }
 class Inline::Scheme::Guile::Vector { has @.value }
+class Inline::Scheme::Guile::BitVector { has @.value }
 
 class Inline::Scheme::Guile::AltDouble is repr('CStruct')
 	{
@@ -142,6 +146,8 @@ class Inline::Scheme::Guile::ConsCell is repr('CStruct')
 	{
 	has int32 $.type;
 	HAS Inline::Scheme::Guile::AltType $.content;
+	HAS Pointer $.next;
+	HAS Pointer $.previous;
 	}
 
 class Inline::Scheme::Guile
@@ -170,7 +176,8 @@ class Inline::Scheme::Guile
 
 	method push_something( @stack, $content )
 		{
-		if @stack[*-1] ~~ Inline::Scheme::Guile::Vector
+		if @stack[*-1] ~~ Inline::Scheme::Guile::Vector or
+		   @stack[*-1] ~~ Inline::Scheme::Guile::BitVector
 			{
 			@stack[*-1].value.push( $content );
 			}
@@ -236,6 +243,19 @@ class Inline::Scheme::Guile
 						:name( $deref_content.string_content ) );
 				self.push_something( @stack, $content );
 				}
+
+			when BITVECTOR_START
+				{
+				my $v = Inline::Scheme::Guile::BitVector.new(
+						:values() );
+				self.push_something( @stack, $v );
+				@stack.push( $v );
+				}
+			when BITVECTOR_END
+				{
+				@stack.pop;
+				}
+
 			when VECTOR_START
 				{
 				my $v = Inline::Scheme::Guile::Vector.new(
