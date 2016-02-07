@@ -3,7 +3,7 @@
 use v6;
 use Test;
 
-plan 6;
+plan 8;
 
 use Inline::Scheme::Guile;
 
@@ -13,8 +13,6 @@ is-deeply [ $g.run( q{}         ) ], [ ], q{empty};
 is-deeply [ $g.run( q{(values)} ) ], [ ], q{(values) -> empty};
 
 #$g._dump('#()');
-#$g._dump('-1/2');
-#$g.run('""');
 subtest sub
 	{
 	plan 10;
@@ -96,16 +94,17 @@ subtest sub
 
 subtest sub
 	{
-	is-deeply [ $g.run( q{#(1 #(2) 3)} ) ],
-                  [ Inline::Scheme::Guile::Vector.new( :value(
-                      Inline::Scheme::Guile::Vector.new( :value( ) ) ) ) ],
-                  q{#(1 #(2) 3) -> ::Vector(::Vector)};
-#`(
+	plan 2;
+
 	is-deeply [ $g.run( q{#(#())} ) ],
                   [ Inline::Scheme::Guile::Vector.new( :value(
                       Inline::Scheme::Guile::Vector.new( :value( ) ) ) ) ],
                   q{#(#()) -> ::Vector(::Vector)};
-)
+
+	is-deeply [ $g.run( q{#(1 #(2) 3)} ) ],
+                  [ Inline::Scheme::Guile::Vector.new( :value( 1,
+                      Inline::Scheme::Guile::Vector.new( :value( 2 ) ), 3 ) ) ],
+                  q{#(1 #(2) 3) -> ::Vector(::Vector)};
 	},
 	q{Nested vectors};
 

@@ -214,7 +214,7 @@ static cons_cell* _scm_to_cell( SCM scm )
 	//
 	else if ( scm_is_symbol( scm ) )
 		{
-//printf("Symbol\n");
+//printf("Symbol '%s'\n", scm_to_locale_string( scm_symbol_to_string( scm ) ) );
 		new->type = TYPE_SYMBOL;
 		new->string_content =
 			scm_to_locale_string( scm_symbol_to_string( scm ) );
@@ -230,15 +230,6 @@ static cons_cell* _scm_to_cell( SCM scm )
 			scm_to_locale_string( scm_symbol_to_string( scm_keyword_to_symbol( scm ) ) );
 		}
 
-	// '-1.2' is a real
-	//
-	else if ( scm_is_real( scm ) )
-		{
-//printf("Real\n");
-		new->type = TYPE_DOUBLE;
-		new->double_content = scm_to_double( scm );
-		}
-
 	// '-1/2' is a rational (and complex, so test before complex)
 	//
 	else if ( scm_is_rational( scm ) )
@@ -249,6 +240,15 @@ static cons_cell* _scm_to_cell( SCM scm )
 			scm_to_double( scm_numerator( scm ) );
 		new->rational_content.denominator_part =
 			 scm_to_double( scm_denominator( scm ) );
+		}
+
+	// '-1.2' is a real
+	//
+	else if ( scm_is_real( scm ) )
+		{
+//printf("Real\n");
+		new->type = TYPE_DOUBLE;
+		new->double_content = scm_to_double( scm );
 		}
 
 	// '-1i+2' is a complex
@@ -294,6 +294,7 @@ static cons_cell* _scm_to_cell( SCM scm )
 //printf("Void (fallback)\n");
 		new->type = VOID;
 		}
+//printf("Final type: %d\n", new->type);
 	return new;
 	}
 
@@ -355,7 +356,7 @@ void run( const char* expression, void (*unmarshal(void*)) )
 	{
 	cons_cell* head = scm_with_guile( _run, (void*)expression );
 
-_display_list(head);
+//_display_list(head);
 	while( head )
 		{
 		unmarshal(head);

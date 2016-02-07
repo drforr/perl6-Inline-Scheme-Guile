@@ -123,12 +123,19 @@ class Inline::Scheme::Guile::AltDouble is repr('CStruct')
 	has num64 $.imag_part;
 	}
 
+class Inline::Scheme::Guile::AltRational is repr('CStruct')
+	{
+	has num64 $.numerator_part;
+	has num64 $.denominator_part;
+	}
+
 class Inline::Scheme::Guile::AltType is repr('CUnion')
 	{
 	has long $.int_content;
 	has num64 $.double_content;
-	has Str  $.string_content;
+	has Str $.string_content;
 	HAS Inline::Scheme::Guile::AltDouble $.complex_content;
+	HAS Inline::Scheme::Guile::AltRational $.rational_content;
 	}
 
 class Inline::Scheme::Guile::ConsCell is repr('CStruct')
@@ -156,127 +163,106 @@ class Inline::Scheme::Guile
 		_dump( $expression );
 		}
 
-	method _push_value( $state, $content )
-		{
-		if $state.<vector-depth>
-			{
-			$state.<stuff>[*-1].value.push( $content );
-			}
-		else
-			{
-			$state.<stuff>.push( $content );
-			}
-		}
-
-	method _push_cell( $cell, $state )
-		{
-		CATCH
-			{
-			warn "Don't die in callback, warn instead.\n";
-			warn $_;
-			}
-		my $type = $cell.deref.type;
-		given $type
-			{
-			when VECTOR_START
-				{
-				$state.<vector-depth>++;
-				$state.<stuff>.push(
-				  Inline::Scheme::Guile::Vector.new );
-				}
-
-			when VECTOR_END
-				{
-				$state.<vector-depth>--;
-				}
-
-			when TYPE_KEYWORD
-				{
-				my $content = $cell.deref.content;
-				self._push_value( $state,
-				  Inline::Scheme::Guile::Keyword.new(
-				    :name($content.string_content) ) );
-				}
-
-			# Scheme expands 'a to (quote a) in lists and vectors.
-			when TYPE_SYMBOL
-				{
-				my $content = $cell.deref.content;
-				self._push_value( $state,
-				  Inline::Scheme::Guile::Symbol.new(
-				    :name($content.string_content) ) );
-				}
-
-			when TYPE_STRING
-				{
-				my $content = $cell.deref.content;
-				my $string = $content.string_content;
-				self._push_value( $state, $string );
-				}
-
-			when TYPE_COMPLEX
-				{
-				my $content = $cell.deref.content;
-				my $complex = $content.complex_content;
-				self._push_value( $state,
-				  $complex.real_part +
-				  ( $complex.imag_part * i ) );
-				}
-
-			when TYPE_RATIONAL
-				{
-				my $content = $cell.deref.content;
-				my $rational = $content.rational_content;
-				self._push_value( $state,
-				  $rational.numerator_part /
-				  $rational.denominator_part );
-				}
-
-			when TYPE_DOUBLE
-				{
-				my $content = $cell.deref.content;
-				my $double  = $content.double_content;
-				self._push_value( $state, $double );
-				}
-
-			when TYPE_INTEGER
-				{
-				my $content = $cell.deref.content;
-				my $int     = $content.int_content;
-				self._push_value( $state, $int );
-				}
-
-			when TYPE_BOOL
-				{
-				my $content = $cell.deref.content;
-				self._push_value(
-				  $state,
-				  $content.int_content == 1 ?? True !! False );
-				}
-
-			when TYPE_NIL { self._push_value( $state, Nil ) }
-
-			# Don't do anything in this case.
-			when VOID { }
-
-			when UNKNOWN_TYPE { warn "Unknown type caught\n" }
-			}
-		}
-
 	sub run( Str $expression,
 		 &marshal_guile (Pointer[Inline::Scheme::Guile::ConsCell]) )
 		   { ... }
 		native(&run);
 
+	method push_something( @stack, $content )
+		{
+		if @stack[*-1] ~~ Inline::Scheme::Guile::Vector
+			{
+			@stack[*-1].value.push( $content );
+			}
+		else
+			{
+			@stack[*-1].push( $content );
+			}
+		}
+
+	method push_cell( @stack, $cell )
+		{
+		my $deref_content = $cell.deref.content;
+		given $cell.deref.type
+			{
+			when VOID { }
+			when TYPE_NIL
+				{
+				self.push_something( @stack, Nil );
+				}
+			when TYPE_BOOL
+				{
+				my $content =
+					$deref_content.int_content
+						?? True !! False;
+				self.push_something( @stack, $content );
+				}
+			when TYPE_INTEGER
+				{
+				my $content =
+					$deref_content.int_content;
+				self.push_something( @stack, $content );
+				}
+			when TYPE_STRING
+				{
+				my $content =
+					 $deref_content.string_content;
+				self.push_something( @stack, $content );
+				}
+			when TYPE_RATIONAL
+				{
+				my $content =
+					$deref_content.rational_content.numerator_part /
+					$deref_content.rational_content.denominator_part;
+				self.push_something( @stack, $content );
+				}
+			when TYPE_COMPLEX
+				{
+				my $content =
+					$deref_content.complex_content.real_part + $deref_content.complex_content.imag_part * i;
+				self.push_something( @stack, $content );
+				}
+			when TYPE_SYMBOL
+				{
+				my $content =
+					Inline::Scheme::Guile::Symbol.new(
+						:name( $deref_content.string_content ) );
+				self.push_something( @stack, $content );
+				}
+			when TYPE_KEYWORD
+				{
+				my $content =
+					Inline::Scheme::Guile::Keyword.new(
+						:name( $deref_content.string_content ) );
+				self.push_something( @stack, $content );
+				}
+			when VECTOR_START
+				{
+				my $v = Inline::Scheme::Guile::Vector.new(
+						:values() );
+				self.push_something( @stack, $v );
+				@stack.push( $v );
+				}
+			when VECTOR_END
+				{
+				@stack.pop;
+				}
+			}
+		}
+
 	method run( Str $expression )
 		{
+		CATCH
+			{
+			warn "Must not die inside C callback";
+			warn $_;
+			}
 		my @stuff;
-		my $vector-depth = 0;
-		my $state = { vector-depth => 0 };
-		$state.<stuff> := @stuff;
+		my @stack;
+		@stack.push( @stuff );
 		my $ref = sub ( Pointer[Inline::Scheme::Guile::ConsCell] $cell )
 			{
-			self._push_cell( $cell, $state );
+			self.push_cell( @stack, $cell );
 			}
 		run( $expression, $ref );
 		return @stuff;
