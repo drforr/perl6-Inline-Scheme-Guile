@@ -9,9 +9,6 @@ use Inline::Scheme::Guile;
 
 my $g = Inline::Scheme::Guile.new;
 
-#$g.run( q{#*001101} );
-#$g._dump( q{#*001101} );
-
 is-deeply [ $g.run( q{}         ) ], [ ], q{empty};
 is-deeply [ $g.run( q{(values)} ) ], [ ], q{(values) -> empty};
 
@@ -125,6 +122,22 @@ subtest sub
                   q{(values 1 #(2) 3) -> ::Vector};
 	},
 	q{Composite atom in a list of singletons};
+
+subtest sub
+	{
+	is-deeply [ $g.run( q{'()} ) ],
+		  [ $[ ] ],
+		  q{'()};
+
+	is-deeply [ $g.run( q{'(1 2 3)} ) ],
+		  [ $[ 1, 2, 3 ] ],
+		  q{'(1 2 3)};
+
+	is-deeply [ $g.run( q{'(1 ( 2 ) 3)} ) ],
+		  [ $[ 1, $[ 2 ], 3 ] ],
+		  q{'(1 ( 2 ) 3)};
+	},
+	q{List};
 
 subtest sub
 	{

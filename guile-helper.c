@@ -37,61 +37,6 @@ static void dump_scm( SCM scm )
         printf("\n");
 	}
 
-/*
-typedef enum
-	{
-	BITVECTOR_START = -258,
-	BITVECTOR_END   = -258,
-
-	VECTOR_START  = -256,
-	VECTOR_END    = -255,
-
-	UNKNOWN_TYPE  = -2,
-	VOID          = -1,
-
-	TYPE_NIL      = 1, // Yes, redundant, but matching the Perl...
-	TYPE_BOOL     = 2,
-	TYPE_INTEGER  = 3,
-	TYPE_STRING   = 4,
-	TYPE_DOUBLE   = 5,
-	TYPE_RATIONAL = 6,
-	TYPE_COMPLEX  = 7,
-	TYPE_SYMBOL   = 8,
-	TYPE_KEYWORD  = 9,
-	}
-	cons_cell_type;
-
-typedef struct
-	{
-	double real_part;
-	double imag_part;
-	}
-	complex_value;
-
-typedef struct
-	{
-	double numerator_part;
-	double denominator_part;
-	}
-	rational_value;
-
-typedef struct cons_cell cons_cell;
-struct cons_cell
-	{
-	cons_cell_type type;
-	union
-		{
-		long           integer_content;
-		char*          string_content;
-		double         double_content;
-		rational_value rational_content;
-		complex_value  complex_content;
-		};
-	cons_cell* next;
-	cons_cell* previous;
-	};
-*/
-
 static void _display_list( cons_cell* head )
 	{
 	int depth = 0;
@@ -206,6 +151,32 @@ static cons_cell* _scm_to_cell( SCM scm )
 			new->type = TYPE_BOOL;
 			new->integer_content = 1;
 			}
+		}
+
+	else if ( scm_is_true( scm_list_p( scm ) ) )
+		{
+		// Inconsistency in the API?
+		int num_values = scm_to_int( scm_length( scm ) );
+		int i;
+		cons_cell* tail = new;
+		new->type = LIST_START;
+
+//printf("length %d\n",num_values);
+		for ( i = 0 ; i < num_values ; i++ )
+			{
+			// Woops, another weirdness in the API
+			SCM _scm = scm_list_ref( scm, scm_from_int( i ) );
+			cons_cell* _head = _scm_to_cell( _scm );
+			cons_cell* _tail = _find_tail( _head );
+			tail->next = _head;
+			_head->previous = tail;
+			tail = _tail;
+			}
+		cons_cell* last = _new_cons_cell();
+		last->type = LIST_END;
+		tail->next = last;
+		last->previous = tail;
+//printf("list\n");
 		}
 
 	// '2' is an integer

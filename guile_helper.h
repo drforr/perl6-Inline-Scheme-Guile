@@ -1,5 +1,8 @@
 typedef enum
 	{
+	LIST_START      = -260,
+	LIST_END        = -259,
+
 	BITVECTOR_START = -258,
 	BITVECTOR_END   = -257,
 

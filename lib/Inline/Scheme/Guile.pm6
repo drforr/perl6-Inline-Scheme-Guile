@@ -97,6 +97,9 @@ so for consistency's sake all lists are considered references.
 
 =end pod
 
+constant LIST_START       = -260;
+constant LIST_END         = -259;
+
 constant BITVECTOR_START  = -258;
 constant BITVECTOR_END    = -257;
 
@@ -242,6 +245,17 @@ class Inline::Scheme::Guile
 					Inline::Scheme::Guile::Keyword.new(
 						:name( $deref_content.string_content ) );
 				self.push_something( @stack, $content );
+				}
+
+			when LIST_START
+				{
+				my $v = [ ];
+				self.push_something( @stack, $v );
+				@stack.push( $v );
+				}
+			when LIST_END
+				{
+				@stack.pop;
 				}
 
 			when BITVECTOR_START
