@@ -96,10 +96,16 @@ subtest sub
 
 subtest sub
 	{
+	is-deeply [ $g.run( q{#(1 #(2) 3)} ) ],
+                  [ Inline::Scheme::Guile::Vector.new( :value(
+                      Inline::Scheme::Guile::Vector.new( :value( ) ) ) ) ],
+                  q{#(1 #(2) 3) -> ::Vector(::Vector)};
+#`(
 	is-deeply [ $g.run( q{#(#())} ) ],
                   [ Inline::Scheme::Guile::Vector.new( :value(
                       Inline::Scheme::Guile::Vector.new( :value( ) ) ) ) ],
                   q{#(#()) -> ::Vector(::Vector)};
+)
 	},
 	q{Nested vectors};
 
