@@ -185,7 +185,7 @@ class Inline::Scheme::Guile
 				  Inline::Scheme::Guile::Vector.new );
 				}
 
-			when VECTOR_START
+			when VECTOR_END
 				{
 				$state.<vector-depth>--;
 				}

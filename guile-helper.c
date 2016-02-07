@@ -70,7 +70,8 @@ typedef struct
 	}
 	rational_value;
 
-typedef struct
+typedef struct cons_cell cons_cell;
+struct cons_cell
 	{
 	cons_cell_type type;
 	union
@@ -81,83 +82,22 @@ typedef struct
 		rational_value rational_content;
 		complex_value complex_content;
 		};
-	}
-	cons_cell;
+	cons_cell* next;
+	cons_cell* previous;
+	};
 
-static size_t _num_cells(); // Forward declaration
-
-static size_t _num_vector_cells( SCM scm )
+static cons_cell* _new_cons_cell()
 	{
-	size_t num_cells = 2; // VECTOR_START and VECTOR_END
-	int num_values = scm_c_vector_length( scm );
-	int i;
-
-	// Note _num_vector_cells calls _num_cells, so it should do the
-	// recursive thing.
-	for ( i = 0; i < num_values; i++ )
-		{
-		SCM _scm = scm_c_vector_ref( scm, i );
-		num_cells += _num_cells( _scm );
-		}
-
-	return num_cells;
+	cons_cell* cell = malloc( sizeof( cons_cell ) );
+	cell->next = 0;
+	cell->previous = 0;
+	return cell;
 	}
 
-static size_t _num_cells( SCM scm )
+static cons_cell* _scm_to_cell( SCM scm )
 	{
-	if ( scm_is_bool(     scm ) ) return 1; // '#t', '#f', '#nil'
-	if ( scm_is_integer(  scm ) ) return 1; // '2'
-	if ( scm_is_string(   scm ) ) return 1; // '"foo"'
-	if ( scm_is_symbol(   scm ) ) return 1; // "'a"
-	if ( scm_is_keyword(  scm ) ) return 1; // '#:foo'
-	if ( scm_is_real(     scm ) ) return 1; // '-1.2'
-	if ( scm_is_rational( scm ) ) return 1; // '-1/2'
-	if ( scm_is_complex(  scm ) ) return 1; // '1+2i'
+	cons_cell* head = _new_cons_cell();
 
-	if ( scm_is_vector(   scm ) ) return _num_vector_cells( scm ); // #(1 2)
-
-	if ( scm_is_true( scm ) ) return 1;
-printf("Uncovered cell type!\n");
-	return 0;
-	}
-
-static size_t _count_cells( SCM scm )
-	{
-	size_t num_cells = 1; // Start with the sentinel
-	int num_values = scm_c_nvalues( scm );
-	int i;
-
-	for ( i = 0; i < num_values; i++ )
-		{
-		SCM _scm = scm_c_value_ref( scm, i );
-		num_cells += _num_cells( _scm );
-		}
-
-	return num_cells;
-	}
-
-static size_t _scm_to_cell( SCM scm, cons_cell* cell ); // Forward declaration
-
-static size_t _scm_vector_to_cell( SCM scm, cons_cell* cell )
-	{
-	int num_values = scm_c_vector_length( scm );
-	int i;
-
-	cell->type = VECTOR_START;
-	cell++;
-	for ( i = 0; i < num_values; i++ )
-		{
-		SCM _scm = scm_c_vector_ref( scm, i );
-		cell += _scm_to_cell( _scm, cell );
-		}
-
-	cell->type = VECTOR_END;
-	cell++;
-	return num_values + 2;
-	}
-
-static size_t _scm_to_cell( SCM scm, cons_cell* cell )
-	{
 	if ( scm_is_bool( scm ) )
 		{
 		if ( scm_is_false( scm ) )
@@ -167,15 +107,15 @@ static size_t _scm_to_cell( SCM scm, cons_cell* cell )
 			if ( scm_is_null( scm ) )
 				{
 //printf("Nil\n");
-				cell->type = TYPE_NIL;
+				head->type = TYPE_NIL;
 				}
 			// '#f' is not null, bool, false
 			//
 			else
 				{
 //printf("False\n");
-				cell->type = TYPE_BOOL;
-				cell->int_content = 0;
+				head->type = TYPE_BOOL;
+				head->int_content = 0;
 				}
 			}
 		// '#t' is not null, bool, not false, true
@@ -183,143 +123,152 @@ static size_t _scm_to_cell( SCM scm, cons_cell* cell )
 		else
 			{
 //printf("True\n");
-			cell->type = TYPE_BOOL;
-			cell->int_content = 1;
+			head->type = TYPE_BOOL;
+			head->int_content = 1;
 			}
-		return 1;
 		}
 
 	// '2' is an integer
 	//
-	if ( scm_is_integer( scm ) )
+	else if ( scm_is_integer( scm ) )
 		{
 //printf("Integer\n");
-		cell->type = TYPE_INTEGER;
-		cell->int_content = scm_to_int( scm );
-		return 1;
+		head->type = TYPE_INTEGER;
+		head->int_content = scm_to_int( scm );
 		}
 
 	// '""' is an string
 	//
-	if ( scm_is_string( scm ) )
+	else if ( scm_is_string( scm ) )
 		{
 //printf("String\n");
-		cell->type = TYPE_STRING;
-		cell->string_content = scm_to_locale_string( scm );
-		return 1;
+		head->type = TYPE_STRING;
+		head->string_content = scm_to_locale_string( scm );
 		}
 
 	// "'a" is an symbol
 	//
-	if ( scm_is_symbol( scm ) )
+	else if ( scm_is_symbol( scm ) )
 		{
 //printf("Symbol\n");
-		cell->type = TYPE_SYMBOL;
-		cell->string_content =
+		head->type = TYPE_SYMBOL;
+		head->string_content =
 			scm_to_locale_string( scm_symbol_to_string( scm ) );
-		return 1;
 		}
 
 	// '#:a" is an keyword
 	//
-	if ( scm_is_keyword( scm ) )
+	else if ( scm_is_keyword( scm ) )
 		{
 //printf("keyword\n");
-		cell->type = TYPE_KEYWORD;
-		cell->string_content =
+		head->type = TYPE_KEYWORD;
+		head->string_content =
 			scm_to_locale_string( scm_symbol_to_string( scm_keyword_to_symbol( scm ) ) );
-		return 1;
 		}
 
 	// '-1.2' is a real
 	//
-	if ( scm_is_real( scm ) )
+	else if ( scm_is_real( scm ) )
 		{
 //printf("Real\n");
-		cell->type = TYPE_DOUBLE;
-		cell->double_content = scm_to_double( scm );
-		return 1;
+		head->type = TYPE_DOUBLE;
+		head->double_content = scm_to_double( scm );
 		}
 
 	// '-1/2' is a rational (and complex, so test before complex)
 	//
-	if ( scm_is_rational( scm ) )
+	else if ( scm_is_rational( scm ) )
 		{
 //printf("rational\n");
-		cell->type = TYPE_RATIONAL;
-		cell->rational_content.numerator_part =
+		head->type = TYPE_RATIONAL;
+		head->rational_content.numerator_part =
 			scm_to_double( scm_numerator( scm ) );
-		cell->rational_content.denominator_part =
+		head->rational_content.denominator_part =
 			 scm_to_double( scm_denominator( scm ) );
-		return 1;
 		}
 
 	// '-1i+2' is a complex
 	//
-	if ( scm_is_complex( scm ) )
+	else if ( scm_is_complex( scm ) )
 		{
 //printf("complex\n");
-		cell->type = TYPE_COMPLEX;
-		cell->complex_content.real_part =
+		head->type = TYPE_COMPLEX;
+		head->complex_content.real_part =
 			scm_c_real_part( scm );
-		cell->complex_content.imag_part =
+		head->complex_content.imag_part =
 			 scm_c_imag_part( scm );
-		return 1;
 		}
 
 	// '#(1 2 3)' is a vector, remember it can include other things.
 	//
-	if ( scm_is_vector( scm ) )
+	else if ( scm_is_vector( scm ) )
 		{
+		int i;
+		cons_cell* tail = head;
+		head->type = VECTOR_START;
+
+		for ( i = 0 ; i < scm_c_vector_length( scm ) ; i++ )
+			{
+			SCM _scm = scm_c_vector_ref( scm, i );
+			cons_cell* next = _scm_to_cell( _scm );
+// Walk to end of next's list
+			next->previous = tail;
+			tail->next = next;
+			tail = next;
+			}
+		cons_cell* last = _new_cons_cell();
+		last->type = VECTOR_END;
+		tail->next = last;
+		last->previous = tail;
+		
 //printf("vector\n");
-		return _scm_vector_to_cell( scm, cell );
 		}
 
 	// '' is true and only 1 value, apparently.
 	//
-	if ( scm_is_true( scm ) )
+	else if ( scm_is_true( scm ) )
 		{
 //printf("Void (fallback)\n");
-		cell->type = VOID;
-		return 1;
+		head->type = VOID;
 		}
-printf("Unknown cell type, not advancing pointer.\n");
-	return 0;
-	}
-
-static void _walk_scm( SCM scm, cons_cell* result )
-	{
-	int num_values = scm_c_nvalues( scm );
-	int i;
-
-	for ( i = 0; i < num_values; i++ )
-		{
-		SCM _scm = scm_c_value_ref( scm, i );
-		result += _scm_to_cell( _scm, result );
-		}
-	result->type = ZERO;
+	return head;
 	}
 
 void* _run( void* expression )
 	{
 	SCM str = scm_from_utf8_string( (char*) expression );
-	SCM scm = scm_eval_string( str );
+	SCM response = scm_eval_string( str );
+	cons_cell* head;
 
 	// Sigh, special-case void lists.
-	if ( scm_c_nvalues( scm ) == 0 )
+	if ( scm_c_nvalues( response ) == 0 )
 		{
-		cons_cell* result = malloc( sizeof( cons_cell ) * 2 );
-		result[0].type = VOID;
-		result[1].type = ZERO;
-		return result;
+		head = _new_cons_cell();
+		head->type = VOID;
+		}
+	else
+		{
+		int i;
+		SCM first = scm_c_value_ref( response, 0 );
+		head = _scm_to_cell( first );
+		cons_cell* tail = head;
+
+		for ( i = 1 ; i < scm_c_nvalues( response ) ; i++ )
+			{
+			SCM scm = scm_c_value_ref( response, i );
+			cons_cell* next = _scm_to_cell( scm );
+			next->previous = tail;
+			tail->next = next;
+// Walk to end of next's list
+while ( next->next )
+	{
+	next = next->next;
+	}
+			tail = next;
+			}
 		}
 
-	size_t num_values = _count_cells( scm );
-	cons_cell* result = malloc( sizeof( cons_cell ) * num_values );
-
-	_walk_scm( scm, result );
-
-	return result;
+	return head;
 	}
 
 void* __dump( void* _expression )
@@ -343,15 +292,40 @@ void _dump( const char* expression )
 	(void)scm_with_guile( __dump, (void*)expression );
 	}
 
+static void _display_list( cons_cell* head )
+	{
+	while ( head )
+		{
+		switch( head->type )
+			{
+			case VECTOR_START: printf("VECTOR_START\n"); break;
+			case VECTOR_END: printf("VECTOR_END\n"); break;
+
+			case UNKNOWN_TYPE: printf("UNKNOWN_TYPE\n"); break;
+			case VOID: printf("VOID\n"); break;
+			case ZERO: printf("ZERO\n"); break;
+			case TYPE_NIL: printf("TYPE_NIL\n"); break;
+			case TYPE_BOOL: printf("TYPE_BOOL\n"); break;
+			case TYPE_INTEGER: printf("TYPE_INTEGER\n"); break;
+			case TYPE_STRING: printf("TYPE_STRING\n"); break;
+			case TYPE_DOUBLE: printf("TYPE_DOUBLE\n"); break;
+			case TYPE_RATIONAL: printf("TYPE_RATIONAL\n"); break;
+			case TYPE_COMPLEX: printf("TYPE_COMPLEX\n"); break;
+			case TYPE_SYMBOL: printf("TYPE_SYMBOL\n"); break;
+			case TYPE_KEYWORD: printf("TYPE_KEYWORD\n"); break;
+			}
+		head = head->next;
+		}
+	}
+
 void run( const char* expression, void (*unmarshal(void*)) )
 	{
-	cons_cell* cells = scm_with_guile( _run, (void*)expression );
-	cons_cell* head = cells;
+	cons_cell* head = scm_with_guile( _run, (void*)expression );
 
-	while( head->type != ZERO )
+//_display_list(head);
+	while( head )
 		{
-		unmarshal(head++);
+		unmarshal(head);
+		head = head->next;
 		}
-
-	free(cells);
 	}

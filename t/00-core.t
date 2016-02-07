@@ -54,7 +54,7 @@ subtest sub
 
 subtest sub
 	{
-	plan 3;
+	plan 4;
 
 	is-deeply [ $g.run( q{#()} ) ],
                   [ Inline::Scheme::Guile::Vector.new( :value( ) ) ],
@@ -93,6 +93,15 @@ subtest sub
 		  q{(values 1 2 3 4 5 6 7 8 9 10) returns a list of values};
 	},
 	q{Two return values (not a two-element list)};
+
+subtest sub
+	{
+	is-deeply [ $g.run( q{(values 1 #(2) 3)} ) ],
+                  [ 1, Inline::Scheme::Guile::Vector.new( :value( 2 ) ), 3 ],
+                  q{(values 1 #(2) 3) -> ::Vector};
+
+	},
+	q{Composite atom in a list of singletons};
 
 subtest sub
 	{
