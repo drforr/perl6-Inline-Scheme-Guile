@@ -96,10 +96,18 @@ subtest sub
 
 subtest sub
 	{
+	is-deeply [ $g.run( q{#(#())} ) ],
+                  [ Inline::Scheme::Guile::Vector.new( :value(
+                      Inline::Scheme::Guile::Vector.new( :value( ) ) ) ) ],
+                  q{#(#()) -> ::Vector(::Vector)};
+	},
+	q{Nested vectors};
+
+subtest sub
+	{
 	is-deeply [ $g.run( q{(values 1 #(2) 3)} ) ],
                   [ 1, Inline::Scheme::Guile::Vector.new( :value( 2 ) ), 3 ],
                   q{(values 1 #(2) 3) -> ::Vector};
-
 	},
 	q{Composite atom in a list of singletons};
 

@@ -43,7 +43,7 @@ typedef enum
 
 	UNKNOWN_TYPE  = -2,
 	VOID          = -1,
-	ZERO          = 0,
+
 	TYPE_NIL      = 1, // Yes, redundant, but matching the Perl...
 	TYPE_BOOL     = 2,
 	TYPE_INTEGER  = 3,
@@ -294,25 +294,54 @@ void _dump( const char* expression )
 
 static void _display_list( cons_cell* head )
 	{
+	int depth = 0;
 	while ( head )
 		{
 		switch( head->type )
 			{
-			case VECTOR_START: printf("VECTOR_START\n"); break;
-			case VECTOR_END: printf("VECTOR_END\n"); break;
+			case VECTOR_START:
+				printf("%d VECTOR_START\n", depth);
+				depth++;
+				break;
+			case VECTOR_END:
+				depth--;
+				printf("%d VECTOR_END\n", depth);
+				break;
+                                                                      
+			case UNKNOWN_TYPE:
+				printf("%d UNKNOWN_TYPE\n", depth);
+				break;
+			case VOID:
+				printf("%d VOID\n", depth);
+				break;
 
-			case UNKNOWN_TYPE: printf("UNKNOWN_TYPE\n"); break;
-			case VOID: printf("VOID\n"); break;
-			case ZERO: printf("ZERO\n"); break;
-			case TYPE_NIL: printf("TYPE_NIL\n"); break;
-			case TYPE_BOOL: printf("TYPE_BOOL\n"); break;
-			case TYPE_INTEGER: printf("TYPE_INTEGER\n"); break;
-			case TYPE_STRING: printf("TYPE_STRING\n"); break;
-			case TYPE_DOUBLE: printf("TYPE_DOUBLE\n"); break;
-			case TYPE_RATIONAL: printf("TYPE_RATIONAL\n"); break;
-			case TYPE_COMPLEX: printf("TYPE_COMPLEX\n"); break;
-			case TYPE_SYMBOL: printf("TYPE_SYMBOL\n"); break;
-			case TYPE_KEYWORD: printf("TYPE_KEYWORD\n"); break;
+			case TYPE_NIL:
+				printf("%d TYPE_NIL\n", depth);
+				break;
+			case TYPE_BOOL:
+				printf("%d TYPE_BOOL (%ld)\n", depth, head->int_content);
+				break;
+			case TYPE_INTEGER:
+				printf("%d TYPE_INTEGER (%ld)\n", depth, head->int_content);
+				break;
+			case TYPE_STRING:
+				printf("%d TYPE_STRING (%s)\n", depth, head->string_content);
+				break;
+			case TYPE_DOUBLE:
+				printf("%d TYPE_DOUBLE\n", depth);
+				break;
+			case TYPE_RATIONAL:
+				printf("%d TYPE_RATIONAL\n", depth);
+				break;
+			case TYPE_COMPLEX:
+				printf("%d TYPE_COMPLEX\n", depth);
+				break;
+			case TYPE_SYMBOL:
+				printf("%d TYPE_SYMBOL\n", depth);
+				break;
+			case TYPE_KEYWORD:
+				printf("%d TYPE_KEYWORD\n", depth);
+				break;
 			}
 		head = head->next;
 		}
@@ -322,7 +351,7 @@ void run( const char* expression, void (*unmarshal(void*)) )
 	{
 	cons_cell* head = scm_with_guile( _run, (void*)expression );
 
-//_display_list(head);
+_display_list(head);
 	while( head )
 		{
 		unmarshal(head);
