@@ -3,7 +3,7 @@
 use v6;
 use Test;
 
-plan 8;
+plan 10;
 
 use Inline::Scheme::Guile;
 
@@ -148,3 +148,5 @@ subtest sub
 	is-deeply [ $g.run( q{(inc-it 2)} ) ], [ 3 ], q{(inc-it 2) is 3};
 	},
 	q{Environment persists};
+
+is $g.call( '+', 3, 4 ), 7, q{(+ 3 4) -> 7};

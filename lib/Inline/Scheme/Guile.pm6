@@ -10,7 +10,10 @@ C<Inline::Scheme::Guile> is a Perl 6 binding to GNU Guile Scheme.
 
     use Inline::Scheme::Guile;
 
-    say "Scheme says 3 + 4 is " ~ Inline::Scheme::Guile.new.run('(+ 3 4)');
+    my $g = Inline::Scheme::Guile.new;
+    say "Scheme says 3 + 4 is " ~ $g.run('(+ 3 4)');
+
+    say "Scheme says 3 + 4 is " ~ $g.call( '+', 3, 4 );
 
 =head1 Documentation
 
@@ -300,5 +303,33 @@ class Inline::Scheme::Guile
 			}
 		run( $expression, $ref );
 		return @stuff;
+		}
+
+	method to-list( $operator, @args )
+		{
+		my @name = map
+			{
+			if $_ ~~ Array
+				{ '(' ~ self.to-list( @( $_ ) ) ~ ')' }
+			elsif $_ ~~ Inline::Scheme::Guile::Symbol
+				{ qq{'$_.name} }
+			elsif $_ ~~ Inline::Scheme::Guile::Keyword
+				{ qq{#:$_.name} }
+			elsif $_ ~~ Numeric { $_ }
+			elsif $_ ~~ Str { qq{"$_"} }
+			elsif $_ ~~ Bool { $_ ?? q{#t} !! q{#f} }
+			elsif $_ ~~ Nil { q{#nil} }
+			else
+				{
+die "Unmapped type\n";
+				}
+			}, @args;
+		return '(' ~ "$operator " ~ @name.join( ' ' ) ~ ')';
+		}
+
+	method call( Str $operator, *@args )
+		{
+		my $str = self.to-list( $operator, @args );
+		self.run( $str );
 		}
 	}

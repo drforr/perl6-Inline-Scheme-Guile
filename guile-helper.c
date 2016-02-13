@@ -44,22 +44,25 @@ static void _display_list( cons_cell* head )
 		{
 		switch( head->type )
 			{
+			case LIST_START:
+				printf("%d LIST_START\n", depth++);
+				break;
+			case LIST_END:
+				printf("%d LIST_END\n", --depth);
+				break;
+                                                                      
 			case BITVECTOR_START:
-				printf("%d BITVECTOR_START\n", depth);
-				depth++;
+				printf("%d BITVECTOR_START\n", depth++);
 				break;
 			case BITVECTOR_END:
-				depth--;
-				printf("%d BITVECTOR_END\n", depth);
+				printf("%d BITVECTOR_END\n", --depth);
 				break;
                                                                       
 			case VECTOR_START:
-				printf("%d VECTOR_START\n", depth);
-				depth++;
+				printf("%d VECTOR_START\n", depth++);
 				break;
 			case VECTOR_END:
-				depth--;
-				printf("%d VECTOR_END\n", depth);
+				printf("%d VECTOR_END\n", --depth);
 				break;
                                                                       
 			case UNKNOWN_TYPE:
@@ -73,16 +76,20 @@ static void _display_list( cons_cell* head )
 				printf("%d TYPE_NIL\n", depth);
 				break;
 			case TYPE_BOOL:
-				printf("%d TYPE_BOOL (%ld)\n", depth, head->integer_content);
+				printf("%d TYPE_BOOL (%ld)\n", depth,
+					head->integer_content);
 				break;
 			case TYPE_INTEGER:
-				printf("%d TYPE_INTEGER (%ld)\n", depth, head->integer_content);
+				printf("%d TYPE_INTEGER (%ld)\n", depth,
+					head->integer_content);
 				break;
 			case TYPE_STRING:
-				printf("%d TYPE_STRING (%s)\n", depth, head->string_content);
+				printf("%d TYPE_STRING (%s)\n", depth,
+					head->string_content);
 				break;
 			case TYPE_DOUBLE:
-				printf("%d TYPE_DOUBLE\n", depth);
+				printf("%d TYPE_DOUBLE (%f)\n", depth,
+					head->double_content);
 				break;
 			case TYPE_RATIONAL:
 				printf("%d TYPE_RATIONAL\n", depth);
@@ -91,10 +98,12 @@ static void _display_list( cons_cell* head )
 				printf("%d TYPE_COMPLEX\n", depth);
 				break;
 			case TYPE_SYMBOL:
-				printf("%d TYPE_SYMBOL\n", depth);
+				printf("%d TYPE_SYMBOL ('%s)\n", depth,
+					head->string_content);
 				break;
 			case TYPE_KEYWORD:
-				printf("%d TYPE_KEYWORD\n", depth);
+				printf("%d TYPE_KEYWORD (#:%s)\n", depth,
+					head->string_content);
 				break;
 			}
 		head = head->next;
@@ -310,6 +319,25 @@ static cons_cell* _scm_to_cell( SCM scm )
 	return new;
 	}
 
+cons_cell* _run_values( SCM response )
+	{
+	int i;
+	SCM first = scm_c_value_ref( response, 0 );
+	cons_cell* head = _scm_to_cell( first );
+	cons_cell* tail = _find_tail( head );
+
+	for ( i = 1 ; i < scm_c_nvalues( response ) ; i++ )
+		{
+		SCM scm = scm_c_value_ref( response, i );
+		cons_cell* _head = _scm_to_cell( scm );
+		cons_cell* _tail = _find_tail( _head );
+		tail->next = _head;
+		_head->previous = tail;
+		tail = _tail;
+		}
+	return head;
+	}
+
 void* _run( void* expression )
 	{
 	SCM str = scm_from_utf8_string( (char*) expression );
@@ -324,20 +352,7 @@ void* _run( void* expression )
 		}
 	else
 		{
-		int i;
-		SCM first = scm_c_value_ref( response, 0 );
-		head = _scm_to_cell( first );
-		cons_cell* tail = _find_tail( head );
-
-		for ( i = 1 ; i < scm_c_nvalues( response ) ; i++ )
-			{
-			SCM scm = scm_c_value_ref( response, i );
-			cons_cell* _head = _scm_to_cell( scm );
-			cons_cell* _tail = _find_tail( _head );
-			tail->next = _head;
-			_head->previous = tail;
-			tail = _tail;
-			}
+		head = _run_values( response );
 		}
 
 	return head;
