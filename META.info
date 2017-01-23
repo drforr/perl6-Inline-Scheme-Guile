@@ -9,5 +9,5 @@
         "Inline::Scheme::Guile" : "lib/Inline/Scheme/Guile.pm6"
     },
     "resources" : [ "libraries/guile-helper" ],
-    "source-url" : "git://github.com/niner/Inline-Scheme-Guile.git"
+    "source-url" : "git://github.com/drforr/Inline-Scheme-Guile.git"
 }
