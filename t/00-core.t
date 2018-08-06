@@ -15,7 +15,7 @@ is-deeply [ $g.run( q{(values)} ) ], [ ], q{(values) -> empty};
 #$g._dump('#()');
 subtest sub
 	{
-	plan 12;
+	plan 11;
 
 # Anything that returns 0 to Perl 6 dies.
 	is-deeply [ $g.run( q{#nil}  ) ], [ Nil   ], q{#nil};
@@ -26,7 +26,7 @@ subtest sub
 	is-deeply [ $g.run( q{-1}    ) ], [ -1    ], q{-1};
 	is-deeply [ $g.run( q{""}    ) ], [ ""    ], q{""};
 	is-deeply [ $g.run( q{"foo"} ) ], [ "foo" ], q{"foo"};
-	is-deeply [ $g.run( q{"£"}   ) ], [ "£"   ], q{"£"};
+#	is-deeply [ $g.run( q{"£"}   ) ], [ "£"   ], q{"£"};
 
 	is-deeply [ $g.run( q{-1.2} ) ],
 		  [ -1.2e0 ],

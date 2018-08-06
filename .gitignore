@@ -1,5 +1,5 @@
 *.sw[op]
 .prove
 Makefile
-lib/.precomp
+.precomp
 resources
